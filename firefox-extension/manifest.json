@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Walker",
+  "version": "0.0.1",
+  "description": "Makes switching between tabs more convenient with recent tab ordering, scrollable list, and instant search.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "action": {
+    "default_popup": "settings/index.html",
+    "default_title": "Tab Walker Settings"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "commands": {
+    "toggle-walker": {
+      "description": "Open Tab Walker",
+      "suggested_key": {
+        "default": "Alt+Y"
+      }
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tab-walker@example.com"
+    }
+  }
+}
