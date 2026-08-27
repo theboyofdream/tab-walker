@@ -10,6 +10,7 @@
   --radius-badge: 4px;
   --radius-btn: 4px;
   --radius-tick: 1px;
+  --radius-toggle-thumb: 50%;
 
   /* Theme Color Variables */
   --setting-label-color: #3c4043;
@@ -127,7 +128,7 @@ body {
   left: 2px;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--radius-toggle-thumb);
   background: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
