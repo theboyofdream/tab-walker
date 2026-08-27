@@ -1,7 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Settings Script
  * Synchronizes options UI with browser.storage.local.
- * Implements Stepped Capsule Slider and Craft Toggle Switch controls with accessibility attributes.
+ * Implements Stepped Capsule Slider and Craft Toggle Switch controls with filled track background.
  */
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
@@ -72,6 +72,7 @@ function generateTicksForSlider(sliderId) {
 function updateCapsuleThumb(sliderId, value) {
   const input = document.getElementById(sliderId);
   const thumb = document.getElementById(`${sliderId}-thumb`);
+  const fill = document.getElementById(`${sliderId}-fill`);
   const badge = document.getElementById(`${sliderId}-badge`);
   const group = input ? input.closest('.slider-group') : null;
   const unit = group ? group.dataset.unit || '' : '';
@@ -83,6 +84,10 @@ function updateCapsuleThumb(sliderId, value) {
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
   thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 16}px)`;
+
+  if (fill) {
+    fill.style.width = `calc(4px + ${pct * 100}% - ${pct * 8}px)`;
+  }
 
   if (badge) {
     badge.textContent = `${value}${unit}`;

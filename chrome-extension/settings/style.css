@@ -9,6 +9,7 @@
   --badge-color: #5f6368;
   --track-bg: #e4e7ea;
   --track-border: rgba(0, 0, 0, 0.12);
+  --fill-bg: rgba(26, 115, 232, 0.25);
   --tick-bg: rgba(0, 0, 0, 0.18);
   --thumb-bg: #1a73e8;
   --thumb-active-bg: #1557b0;
@@ -212,6 +213,19 @@ body {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.capsule-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  border-radius: 14px;
+  background: var(--fill-bg);
+  transition: width 0.05s ease-out, background-color 0.2s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .ticks-container {
   position: absolute;
   top: 0;
@@ -222,6 +236,7 @@ body {
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
+  z-index: 2;
 }
 
 .tick-mark {
@@ -243,7 +258,7 @@ body {
   transform: translateY(-50%);
   transition: transform 0.15s ease, background-color 0.15s ease;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* Micro-interactions */
@@ -303,6 +318,7 @@ body.dark-theme {
   --badge-color: #8C909C;
   --track-bg: #18191E;
   --track-border: rgba(255, 255, 255, 0.05);
+  --fill-bg: rgba(255, 255, 255, 0.12);
   --tick-bg: rgba(255, 255, 255, 0.12);
   --thumb-bg: #F1F3F5;
   --thumb-active-bg: #ffffff;
