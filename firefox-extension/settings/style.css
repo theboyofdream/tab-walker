@@ -4,13 +4,13 @@
 
 :root {
   /* Global Radius Design System Variables */
-  --radius-full: 9999px;
-  --radius-track: 14px;
-  --radius-thumb: 4px;
+  --radius-full: 4px;
+  --radius-track: 7px;
+  --radius-thumb: 3px;
   --radius-badge: 4px;
   --radius-btn: 4px;
   --radius-tick: 1px;
-  --radius-toggle-thumb: 50%;
+  --radius-toggle-thumb: 4px;
 
   /* Theme Color Variables */
   --setting-label-color: #3c4043;
