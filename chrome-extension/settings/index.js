@@ -27,6 +27,14 @@ const form = document.getElementById('settings-form');
 const resetBtn = document.getElementById('reset-btn');
 const saveStatus = document.getElementById('save-status');
 
+function applyTheme(isDark) {
+  if (isDark) {
+    document.body.classList.add('dark-theme');
+  } else {
+    document.body.classList.remove('dark-theme');
+  }
+}
+
 function updateValueDisplays(settings) {
   ['popupWidth', 'windowHeight', 'fontSize', 'iconSize', 'opacity'].forEach(field => {
     const valEl = document.getElementById(`${field}-val`);
@@ -57,6 +65,7 @@ async function loadSettings() {
     }
   });
 
+  applyTheme(current.isDarkTheme);
   updateValueDisplays(current);
 }
 
@@ -72,6 +81,7 @@ async function saveSettings() {
     }
   });
 
+  applyTheme(settings.isDarkTheme);
   await chrome.storage.local.set({ settings });
   updateValueDisplays(settings);
   showSaveStatus();
