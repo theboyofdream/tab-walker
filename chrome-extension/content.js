@@ -1,7 +1,6 @@
 /**
  * Tab Walker - Content Script
- * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
- * Stays open until user presses Enter, clicks a tab, or presses Escape.
+ * Single command toggle for Tab Walker search overlay.
  */
 
 (function () {
@@ -11,12 +10,10 @@
   const MessageType = {
     PING: 'PING',
     ContentScriptStarted: 'ContentScriptStarted',
-    ContentScriptStopped: 'ContentScriptStopped',
     SWITCH_TAB: 'SWITCH_TAB',
     GET_MODEL: 'GET_MODEL',
     CLOSE_POPUP: 'CLOSE_POPUP',
-    SELECT_TAB: 'SELECT_TAB',
-    DEMO_SETTINGS: 'DEMO_SETTINGS'
+    TOGGLE_WALKER: 'TOGGLE_WALKER'
   };
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 12.08 13.79 10.25H10.04C9.77 7.52 10.72 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
@@ -298,7 +295,7 @@
     });
   }
 
-  function openPopup(initialIncrement = 1) {
+  function openPopup() {
     chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
       if (!model || !model.tabs) return;
 
@@ -309,18 +306,13 @@
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
       host.style.setProperty('--tab-height', `${settings.tabHeight || 42}px`);
-      host.style.setProperty('--font-size', `${settings.fontSize || 15}px`);
-      host.style.setProperty('--icon-size', `${settings.iconSize || 20}px`);
 
       searchQuery = '';
       searchInput.value = '';
       filteredTabs = allTabs.slice();
 
-      if (allTabs.length > 1) {
-        selectedIndex = (initialIncrement > 0 ? 1 : allTabs.length - 1) % allTabs.length;
-      } else {
-        selectedIndex = 0;
-      }
+      // Default to 2nd tab in MRU (previously active tab) if available
+      selectedIndex = allTabs.length > 1 ? 1 : 0;
 
       host.classList.add('is-open');
       isOpen = true;
@@ -389,20 +381,14 @@
       return;
     }
 
-    if (message.type === MessageType.SELECT_TAB) {
-      const increment = message.increment || 1;
+    if (message.type === MessageType.TOGGLE_WALKER) {
       if (!isOpen) {
-        openPopup(increment);
+        openPopup();
       } else {
-        if (filteredTabs.length > 0) {
-          selectedIndex = (selectedIndex + increment + filteredTabs.length) % filteredTabs.length;
-          highlightSelectedTab();
-        }
+        closePopup();
       }
     } else if (message.type === MessageType.CLOSE_POPUP) {
       closePopup();
-    } else if (message.type === MessageType.DEMO_SETTINGS) {
-      openPopup(1);
     }
   });
 

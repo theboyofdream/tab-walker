@@ -1,35 +1,24 @@
 /**
  * Tab Walker - Background Service Worker
- * Manages tab registry in Most Recently Used (MRU) order, tab focus events,
- * shortcut commands, and communication with content scripts.
+ * Manages tab registry in Most Recently Used (MRU) order and single command shortcut.
  */
 
 const MessageType = {
   PING: 'PING',
   ContentScriptStarted: 'ContentScriptStarted',
-  ContentScriptStopped: 'ContentScriptStopped',
   SWITCH_TAB: 'SWITCH_TAB',
-  DEMO_SETTINGS: 'DEMO_SETTINGS',
   GET_MODEL: 'GET_MODEL',
-  SetSettings: 'SetSettings',
-  GetSettings: 'GetSettings',
   CLOSE_POPUP: 'CLOSE_POPUP',
-  SELECT_TAB: 'SELECT_TAB'
+  TOGGLE_WALKER: 'TOGGLE_WALKER'
 };
 
 const defaultSettings = {
-  textScrollDelay: 1000,
-  textScrollSpeed: 1,
-  autoSwitchingTimeout: 1000,
-  numberOfTabsToShow: 7,
   isDarkTheme: false,
   popupWidth: 460,
   tabHeight: 42,
   fontSize: 15,
   iconSize: 20,
-  opacity: 100,
-  isSwitchingToPreviouslyUsedTab: true,
-  isStayingOpen: false
+  opacity: 100
 };
 
 let mruTabs = [];
@@ -53,18 +42,6 @@ function isRestrictedUrl(url) {
   return /^(chrome|chrome-extension|view-source:|about:)/.test(url) ||
          url.startsWith('https://chrome.google.com/webstore') ||
          url.startsWith('https://chromewebstore.google.com');
-}
-
-async function getSettings() {
-  const data = await chrome.storage.local.get('settings');
-  return { ...defaultSettings, ...(data.settings || {}) };
-}
-
-async function updateSettings(newSettings) {
-  const current = await getSettings();
-  const updated = { ...current, ...newSettings };
-  await chrome.storage.local.set({ settings: updated });
-  return updated;
 }
 
 function saveTabOrder() {
@@ -161,74 +138,34 @@ async function activateTab({ id, windowId }) {
   }
 }
 
-async function isContentScriptActive(tabId) {
-  try {
-    const res = await chrome.tabs.sendMessage(tabId, { type: MessageType.PING });
-    return res === 'PONG';
-  } catch (e) {
-    return false;
-  }
-}
-
-async function ensureContentScriptInjected(tab) {
-  if (await isContentScriptActive(tab.id)) {
-    return true;
-  }
-
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id, allFrames: false },
-      files: ['content.js']
-    });
-    await new Promise(r => setTimeout(r, 60));
-    return await isContentScriptActive(tab.id);
-  } catch (err) {
-    console.warn(`Could not inject content script into tab ${tab.id}:`, err);
-    return false;
-  }
-}
-
 async function getActiveTabInCurrentWindow() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab;
 }
 
-async function handleCommand(commandName) {
-  await registryReadyPromise;
-  const activeTab = await getActiveTabInCurrentWindow();
-  if (!activeTab) return;
+// Single command: toggle-walker (Alt+Y)
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'toggle-walker') {
+    await registryReadyPromise;
+    const activeTab = await getActiveTabInCurrentWindow();
+    if (!activeTab) return;
 
-  const sanitized = sanitizeTab(activeTab);
-
-  if (isRestrictedUrl(sanitized.url)) {
-    const previouslyActive = mruTabs.find(t => !isRestrictedUrl(t.url) && t.id !== sanitized.id);
-    if (previouslyActive) {
-      await activateTab(previouslyActive);
-    }
-    return;
-  }
-
-  const injected = await ensureContentScriptInjected(sanitized);
-  if (injected) {
-    const increment = commandName === 'next' ? 1 : -1;
-    try {
-      await chrome.tabs.sendMessage(sanitized.id, {
-        type: MessageType.SELECT_TAB,
-        increment
-      });
-    } catch (err) {
-      const previouslyActive = mruTabs.find(t => t.id !== sanitized.id);
+    const sanitized = sanitizeTab(activeTab);
+    if (isRestrictedUrl(sanitized.url)) {
+      const previouslyActive = mruTabs.find(t => !isRestrictedUrl(t.url) && t.id !== sanitized.id);
       if (previouslyActive) {
         await activateTab(previouslyActive);
       }
+      return;
     }
-  } else {
-    const previouslyActive = mruTabs.find(t => t.id !== sanitized.id);
-    if (previouslyActive) {
-      await activateTab(previouslyActive);
+
+    try {
+      await chrome.tabs.sendMessage(sanitized.id, { type: MessageType.TOGGLE_WALKER });
+    } catch (err) {
+      console.warn('Could not send message to active tab:', err);
     }
   }
-}
+});
 
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
@@ -260,17 +197,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   removeTab(tabId);
-  const settings = await getSettings();
-  if (settings.isSwitchingToPreviouslyUsedTab && mruTabs.length > 0) {
-    const nextToActivate = mruTabs[0];
-    if (nextToActivate) {
-      await activateTab(nextToActivate);
-    }
-  }
-});
-
-chrome.commands.onCommand.addListener((command) => {
-  handleCommand(command);
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -288,7 +214,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case MessageType.GET_MODEL: {
       (async () => {
         await registryReadyPromise;
-        const settings = await getSettings();
         let zoomFactor = 1;
         try {
           if (sender.tab && sender.tab.id) {
@@ -297,7 +222,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } catch (e) {}
         sendResponse({
           tabs: mruTabs.slice(),
-          settings,
+          settings: defaultSettings,
           zoomFactor
         });
       })();
@@ -307,30 +232,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.selectedTab) {
         activateTab(message.selectedTab);
       }
-      break;
-    }
-    case MessageType.SetSettings: {
-      (async () => {
-        const updated = await updateSettings(message.settings || {});
-        sendResponse(updated);
-      })();
-      return true;
-    }
-    case MessageType.GetSettings: {
-      (async () => {
-        const settings = await getSettings();
-        sendResponse(settings);
-      })();
-      return true;
-    }
-    case MessageType.DEMO_SETTINGS: {
-      (async () => {
-        const activeTab = await getActiveTabInCurrentWindow();
-        if (activeTab && !isRestrictedUrl(activeTab.url)) {
-          await ensureContentScriptInjected(activeTab);
-          chrome.tabs.sendMessage(activeTab.id, { type: MessageType.DEMO_SETTINGS });
-        }
-      })();
       break;
     }
   }
