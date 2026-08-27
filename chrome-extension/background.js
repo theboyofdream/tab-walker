@@ -1,5 +1,5 @@
 /**
- * Popup Tab Switcher - Background Service Worker
+ * Tab Walker - Background Service Worker
  * Manages tab registry in Most Recently Used (MRU) order, tab focus events,
  * shortcut commands, and communication with content scripts.
  */
@@ -23,20 +23,19 @@ const defaultSettings = {
   autoSwitchingTimeout: 1000,
   numberOfTabsToShow: 7,
   isDarkTheme: false,
-  popupWidth: 420,
-  tabHeight: 40,
-  fontSize: 16,
-  iconSize: 24,
+  popupWidth: 460,
+  tabHeight: 42,
+  fontSize: 15,
+  iconSize: 20,
   opacity: 100,
   isSwitchingToPreviouslyUsedTab: true,
   isStayingOpen: false
 };
 
-// MRU Tab Registry (index 0 is most recently active tab)
 let mruTabs = [];
-let initializedTabIds = new Set();
 let isWindowFocused = true;
 let isSwitchingProgrammatically = false;
+let registryReadyPromise = null;
 
 function sanitizeTab(tab) {
   return {
@@ -50,8 +49,10 @@ function sanitizeTab(tab) {
 }
 
 function isRestrictedUrl(url) {
-  if (!url) return true;
-  return /^(chrome|view-source:|https?:\/\/chrome\.google\.com|chrome-extension:)/.test(url);
+  if (!url) return false;
+  return /^(chrome|chrome-extension|view-source:|about:)/.test(url) ||
+         url.startsWith('https://chrome.google.com/webstore') ||
+         url.startsWith('https://chromewebstore.google.com');
 }
 
 async function getSettings() {
@@ -141,7 +142,6 @@ function addOrUpdateTab(tab) {
 
 function removeTab(tabId) {
   mruTabs = mruTabs.filter(t => t.id !== tabId);
-  initializedTabIds.delete(tabId);
   saveTabOrder();
 }
 
@@ -180,7 +180,6 @@ async function ensureContentScriptInjected(tab) {
       target: { tabId: tab.id, allFrames: false },
       files: ['content.js']
     });
-    // Give script a short tick to initialize
     await new Promise(r => setTimeout(r, 60));
     return await isContentScriptActive(tab.id);
   } catch (err) {
@@ -195,6 +194,7 @@ async function getActiveTabInCurrentWindow() {
 }
 
 async function handleCommand(commandName) {
+  await registryReadyPromise;
   const activeTab = await getActiveTabInCurrentWindow();
   if (!activeTab) return;
 
@@ -281,19 +281,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
     case MessageType.ContentScriptStarted: {
       if (sender.tab) {
-        initializedTabIds.add(sender.tab.id);
         addOrUpdateTab(sender.tab);
-      }
-      break;
-    }
-    case MessageType.ContentScriptStopped: {
-      if (sender.tab) {
-        initializedTabIds.delete(sender.tab.id);
       }
       break;
     }
     case MessageType.GET_MODEL: {
       (async () => {
+        await registryReadyPromise;
         const settings = await getSettings();
         let zoomFactor = 1;
         try {
@@ -342,4 +336,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-initializeTabRegistry();
+registryReadyPromise = initializeTabRegistry();

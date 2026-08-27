@@ -1,5 +1,5 @@
 /**
- * Popup Tab Switcher - Content Script
+ * Tab Walker - Content Script
  * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
  */
 
@@ -20,23 +20,24 @@
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 12.08 13.79 10.25H10.04C9.77 7.52 10.72 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
 
-  // Create Host & Shadow DOM
+  // Create Host Element & Shadow DOM
   const host = document.createElement('div');
-  host.id = 'popup-tab-switcher-host';
+  host.id = 'tab-walker-host';
   const shadow = host.attachShadow({ mode: 'open' });
 
   // Attach CSS styles synchronously inside Shadow DOM
   const style = document.createElement('style');
   style.textContent = `
     :host {
-      display: none;
+      all: initial !important;
+      display: none !important;
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       z-index: 2147483647 !important;
-      pointer-events: auto;
+      pointer-events: auto !important;
     }
     * {
       box-sizing: border-box;
@@ -50,7 +51,7 @@
       width: 100%;
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.3);
       opacity: var(--popup-opacity, 1);
     }
     .card {
@@ -63,7 +64,7 @@
 
       background: var(--card-bg);
       border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
       color: var(--card-color);
       width: var(--popup-width, 460px);
       max-width: 90vw;
@@ -174,7 +175,19 @@
   shadow.appendChild(style);
   shadow.appendChild(overlay);
 
-  document.documentElement.appendChild(host);
+  // Safe DOM attachment
+  function attachHost() {
+    if (document.documentElement) {
+      document.documentElement.appendChild(host);
+    } else if (document.body) {
+      document.body.appendChild(host);
+    } else {
+      window.addEventListener('DOMContentLoaded', () => {
+        (document.documentElement || document.body).appendChild(host);
+      });
+    }
+  }
+  attachHost();
 
   // State Management
   let isOpen = false;
@@ -319,7 +332,7 @@
         selectedIndex = 0;
       }
 
-      host.style.display = 'block';
+      host.style.setProperty('display', 'block', 'important');
       isOpen = true;
 
       renderTabs();
@@ -334,7 +347,7 @@
 
   function closePopup() {
     isOpen = false;
-    host.style.display = 'none';
+    host.style.setProperty('display', 'none', 'important');
     searchQuery = '';
     searchInput.value = '';
     if (autoSwitchTimer) {
@@ -383,7 +396,7 @@
 
   window.addEventListener('keyup', (e) => {
     if (!isOpen) return;
-    if ((e.key === 'Alt' || e.key === 'AltGraph' || !e.altKey) && !searchQuery) {
+    if ((e.key === 'Alt' || e.key === 'AltGraph' || e.key === 'Meta' || e.key === 'Control') && !searchQuery) {
       if (filteredTabs[selectedIndex]) {
         switchTab(filteredTabs[selectedIndex]);
       }

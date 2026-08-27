@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Popup Tab Switcher",
-  "version": "1.0.0",
+  "name": "Tab Walker",
+  "version": "0.0.1",
   "description": "Makes switching between tabs more convenient with recent tab ordering, scrollable list, and instant search.",
   "permissions": [
     "activeTab",
@@ -11,14 +11,25 @@
     "tabs"
   ],
   "host_permissions": [
-    "file:///*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Popup Tab Switcher"
+    "default_title": "Tab Walker"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
   "commands": {
     "next": {
       "description": "Open recent tabs list. Select next",
