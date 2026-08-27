@@ -1,6 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Background Script
  * Manages tab registry in Most Recently Used (MRU) order and single command shortcut.
+ * Dynamically updates action icon based on theme setting.
  */
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
@@ -21,6 +22,7 @@ const defaultSettings = {
   isDarkTheme: false,
   popupWidth: 460,
   windowHeight: 500,
+  tabHeight: 42,
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
@@ -32,6 +34,21 @@ let mruTabs = [];
 let isWindowFocused = true;
 let isSwitchingProgrammatically = false;
 let registryReadyPromise = null;
+
+function updateActionIcon(isDarkTheme) {
+  const iconPrefix = isDarkTheme ? 'icon-light' : 'icon';
+  const actionApi = api.action || api.browserAction;
+  if (actionApi && typeof actionApi.setIcon === 'function') {
+    actionApi.setIcon({
+      path: {
+        "16": `icons/${iconPrefix}16.png`,
+        "32": `icons/${iconPrefix}32.png`,
+        "48": `icons/${iconPrefix}48.png`,
+        "128": `icons/${iconPrefix}128.png`
+      }
+    }).catch(() => {});
+  }
+}
 
 function sanitizeTab(tab) {
   return {
@@ -58,6 +75,7 @@ async function updateSettings(newSettings) {
   const current = await getSettings();
   const updated = { ...current, ...newSettings };
   await api.storage.local.set({ settings: updated });
+  updateActionIcon(updated.isDarkTheme);
   return updated;
 }
 
@@ -66,10 +84,13 @@ function saveTabOrder() {
 }
 
 async function initializeTabRegistry() {
-  const [allWindows, storageData] = await Promise.all([
+  const [allWindows, storageData, settings] = await Promise.all([
     api.windows.getAll({ populate: true }),
-    api.storage.local.get('tabs')
+    api.storage.local.get('tabs'),
+    getSettings()
   ]);
+
+  updateActionIcon(settings.isDarkTheme);
 
   const openTabsMap = new Map();
   for (const win of allWindows) {
@@ -225,6 +246,13 @@ api.tabs.onRemoved.addListener(async (tabId) => {
     if (nextToActivate) {
       await activateTab(nextToActivate);
     }
+  }
+});
+
+api.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.settings) {
+    const newSettings = changes.settings.newValue || {};
+    updateActionIcon(newSettings.isDarkTheme);
   }
 });
 
