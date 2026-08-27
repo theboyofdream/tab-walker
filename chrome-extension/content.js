@@ -4,8 +4,8 @@
  */
 
 (function () {
-  if (window.__popupTabSwitcherInjected) return;
-  window.__popupTabSwitcherInjected = true;
+  if (window.__tabWalkerInjected) return;
+  window.__tabWalkerInjected = true;
 
   const MessageType = {
     PING: 'PING',
@@ -30,29 +30,34 @@
   style.textContent = `
     :host {
       all: initial !important;
-      display: none !important;
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       z-index: 2147483647 !important;
+      pointer-events: none !important;
+      display: block !important;
+    }
+    :host(.is-open) {
       pointer-events: auto !important;
     }
     * {
       box-sizing: border-box;
     }
     .overlay {
-      all: initial;
       box-sizing: border-box;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: rgba(0, 0, 0, 0.3);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: rgba(0, 0, 0, 0.4);
       opacity: var(--popup-opacity, 1);
+    }
+    :host(.is-open) .overlay {
+      display: flex !important;
     }
     .card {
       --card-color: #202124;
@@ -64,7 +69,7 @@
 
       background: var(--card-bg);
       border-radius: 10px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
       color: var(--card-color);
       width: var(--popup-width, 460px);
       max-width: 90vw;
@@ -82,13 +87,13 @@
       --search-bg: #1e1f21;
     }
     .search-container {
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       background: transparent;
     }
     .search-input {
       width: 100%;
-      padding: 8px 12px;
+      padding: 9px 12px;
       font-size: 14px;
       border: 1px solid var(--search-border);
       border-radius: 6px;
@@ -104,7 +109,7 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 4px 0;
+      padding: 6px 0;
       margin: 0;
       scroll-behavior: smooth;
     }
@@ -112,7 +117,7 @@
       display: flex;
       align-items: center;
       height: var(--tab-height, 42px);
-      padding: 0 14px;
+      padding: 0 16px;
       cursor: pointer;
       position: relative;
       user-select: none;
@@ -175,7 +180,6 @@
   shadow.appendChild(style);
   shadow.appendChild(overlay);
 
-  // Safe DOM attachment
   function attachHost() {
     if (document.documentElement) {
       document.documentElement.appendChild(host);
@@ -332,7 +336,7 @@
         selectedIndex = 0;
       }
 
-      host.style.setProperty('display', 'block', 'important');
+      host.classList.add('is-open');
       isOpen = true;
 
       renderTabs();
@@ -347,7 +351,7 @@
 
   function closePopup() {
     isOpen = false;
-    host.style.setProperty('display', 'none', 'important');
+    host.classList.remove('is-open');
     searchQuery = '';
     searchInput.value = '';
     if (autoSwitchTimer) {
