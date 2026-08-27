@@ -3,6 +3,12 @@
   "name": "Tab Walker",
   "version": "0.0.1",
   "description": "Makes switching between tabs more convenient with recent tab ordering, scrollable list, and instant search.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
     "favicon",
     "search",
@@ -13,6 +19,12 @@
     "service_worker": "background.js"
   },
   "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
     "default_popup": "settings/index.html",
     "default_title": "Tab Walker Settings"
   },
