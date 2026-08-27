@@ -86,7 +86,7 @@ function updateCapsuleThumb(sliderId, value) {
   thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 16}px)`;
 
   if (fill) {
-    fill.style.width = `calc(4px + ${pct * 100}% - ${pct * 8}px)`;
+    fill.style.width = `calc(8px + ${pct * 100}% - ${pct * 16}px)`;
   }
 
   if (badge) {
