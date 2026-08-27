@@ -2,6 +2,7 @@
  * Tab Walker - Content Script
  * Single command toggle for Tab Walker search overlay.
  * Closes automatically if window loses focus.
+ * Performs browser web search on Enter when no tabs match.
  */
 
 (function () {
@@ -14,7 +15,8 @@
     SWITCH_TAB: 'SWITCH_TAB',
     GET_MODEL: 'GET_MODEL',
     CLOSE_POPUP: 'CLOSE_POPUP',
-    TOGGLE_WALKER: 'TOGGLE_WALKER'
+    TOGGLE_WALKER: 'TOGGLE_WALKER',
+    SEARCH_WEB: 'SEARCH_WEB'
   };
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 12.08 13.79 10.25H10.04C9.77 7.52 10.72 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
@@ -148,8 +150,9 @@
     .no-results {
       padding: 20px;
       text-align: center;
-      opacity: 0.6;
+      opacity: 0.7;
       font-size: 14px;
+      line-height: 1.4;
     }
   `;
 
@@ -239,7 +242,11 @@
     if (filteredTabs.length === 0) {
       const noResults = document.createElement('div');
       noResults.className = 'no-results';
-      noResults.textContent = 'No matching tabs found';
+      if (searchQuery) {
+        noResults.textContent = `No matching tabs. Press Enter to search web for "${searchQuery}"`;
+      } else {
+        noResults.textContent = 'No matching tabs found';
+      }
       tabsList.appendChild(noResults);
       return;
     }
@@ -358,8 +365,15 @@
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filteredTabs[selectedIndex]) {
+      if (filteredTabs.length > 0 && filteredTabs[selectedIndex]) {
         switchTab(filteredTabs[selectedIndex]);
+      } else if (filteredTabs.length === 0 && searchQuery) {
+        const queryToSearch = searchQuery;
+        closePopup();
+        chrome.runtime.sendMessage({
+          type: MessageType.SEARCH_WEB,
+          query: queryToSearch
+        });
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();

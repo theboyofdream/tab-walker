@@ -10,6 +10,7 @@ const MessageType = {
   GET_MODEL: 'GET_MODEL',
   CLOSE_POPUP: 'CLOSE_POPUP',
   TOGGLE_WALKER: 'TOGGLE_WALKER',
+  SEARCH_WEB: 'SEARCH_WEB',
   GetSettings: 'GetSettings',
   SetSettings: 'SetSettings'
 };
@@ -260,6 +261,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case MessageType.SWITCH_TAB: {
       if (message.selectedTab) {
         activateTab(message.selectedTab);
+      }
+      break;
+    }
+    case MessageType.SEARCH_WEB: {
+      if (message.query) {
+        if (chrome.search && chrome.search.query) {
+          chrome.search.query({
+            text: message.query,
+            disposition: 'NEW_TAB'
+          });
+        } else {
+          chrome.tabs.create({
+            url: `https://www.google.com/search?q=${encodeURIComponent(message.query)}`
+          });
+        }
       }
       break;
     }

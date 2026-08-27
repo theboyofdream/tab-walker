@@ -5,6 +5,7 @@
   "description": "Makes switching between tabs more convenient with recent tab ordering, scrollable list, and instant search.",
   "permissions": [
     "favicon",
+    "search",
     "storage",
     "tabs"
   ],
