@@ -1,7 +1,6 @@
 /**
  * Popup Tab Switcher - Content Script
- * Displays an isolated Shadow DOM overlay tab switcher with MRU order,
- * scrollable tab list, and real-time title/URL search.
+ * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
  */
 
 (function () {
@@ -9,6 +8,7 @@
   window.__popupTabSwitcherInjected = true;
 
   const MessageType = {
+    PING: 'PING',
     ContentScriptStarted: 'ContentScriptStarted',
     ContentScriptStopped: 'ContentScriptStopped',
     SWITCH_TAB: 'SWITCH_TAB',
@@ -25,17 +25,158 @@
   host.id = 'popup-tab-switcher-host';
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Attach CSS stylesheet from overlay.css
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = chrome.runtime.getURL('overlay.css');
-  shadow.appendChild(link);
+  // Attach CSS styles synchronously inside Shadow DOM
+  const style = document.createElement('style');
+  style.textContent = `
+    :host {
+      display: none;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2147483647 !important;
+      pointer-events: auto;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .overlay {
+      all: initial;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: rgba(0, 0, 0, 0.25);
+      opacity: var(--popup-opacity, 1);
+    }
+    .card {
+      --card-color: #202124;
+      --card-bg: #e4e7ea;
+      --tab-selected-bg: #ffffff;
+      --tab-hover-bg: #f1f2f5;
+      --search-border: #ccc;
+      --search-bg: #ffffff;
 
-  // Template container
-  const container = document.createElement('div');
-  shadow.appendChild(container);
+      background: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      color: var(--card-color);
+      width: var(--popup-width, 460px);
+      max-width: 90vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card.card_dark {
+      --card-color: #e9ebec;
+      --card-bg: #252629;
+      --tab-selected-bg: #35393c;
+      --tab-hover-bg: #2e3133;
+      --search-border: #444;
+      --search-bg: #1e1f21;
+    }
+    .search-container {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background: transparent;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid var(--search-border);
+      border-radius: 6px;
+      background: var(--search-bg);
+      color: var(--card-color);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: #448aff;
+    }
+    .tabs-list {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 0;
+      margin: 0;
+      scroll-behavior: smooth;
+    }
+    .tab {
+      display: flex;
+      align-items: center;
+      height: var(--tab-height, 42px);
+      padding: 0 14px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: background-color 0.1s ease;
+    }
+    .tab:hover {
+      background-color: var(--tab-hover-bg);
+    }
+    .tab.tab_selected {
+      background-color: var(--tab-selected-bg);
+      font-weight: 600;
+    }
+    .tab__icon {
+      width: var(--icon-size, 20px);
+      height: var(--icon-size, 20px);
+      margin-right: 12px;
+      flex-shrink: 0;
+      object-fit: contain;
+      border-radius: 2px;
+    }
+    .tab__text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: var(--font-size, 15px);
+    }
+    .no-results {
+      padding: 20px;
+      text-align: center;
+      opacity: 0.6;
+      font-size: 14px;
+    }
+  `;
 
-  let card, searchInput, tabsList;
+  // Synchronous DOM construction
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const searchContainer = document.createElement('div');
+  searchContainer.className = 'search-container';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'search-input';
+  searchInput.placeholder = 'Search open tabs...';
+
+  searchContainer.appendChild(searchInput);
+
+  const tabsList = document.createElement('div');
+  tabsList.className = 'tabs-list';
+
+  card.appendChild(searchContainer);
+  card.appendChild(tabsList);
+  overlay.appendChild(card);
+
+  shadow.appendChild(style);
+  shadow.appendChild(overlay);
+
+  document.documentElement.appendChild(host);
+
+  // State Management
   let isOpen = false;
   let allTabs = [];
   let filteredTabs = [];
@@ -43,30 +184,6 @@
   let settings = {};
   let autoSwitchTimer = null;
   let searchQuery = '';
-
-  // Load HTML template asynchronously
-  fetch(chrome.runtime.getURL('overlay.html'))
-    .then(res => res.text())
-    .then(html => {
-      container.innerHTML = html;
-      card = shadow.querySelector('#card');
-      searchInput = shadow.querySelector('#search-input');
-      tabsList = shadow.querySelector('#tabs-list');
-
-      if (searchInput) {
-        searchInput.addEventListener('input', () => {
-          searchQuery = searchInput.value.toLowerCase().trim();
-          selectedIndex = 0;
-          updateFilteredTabs();
-          if (autoSwitchTimer) {
-            clearTimeout(autoSwitchTimer);
-            autoSwitchTimer = null;
-          }
-        });
-      }
-    });
-
-  document.documentElement.appendChild(host);
 
   function getFaviconUrl(tab) {
     if (tab.favIconUrl && !tab.favIconUrl.startsWith('chrome://')) {
@@ -101,7 +218,6 @@
   }
 
   function renderTabs() {
-    if (!tabsList) return;
     tabsList.innerHTML = '';
 
     if (filteredTabs.length === 0) {
@@ -145,7 +261,6 @@
   }
 
   function highlightSelectedTab() {
-    if (!tabsList) return;
     const children = tabsList.children;
     for (let i = 0; i < children.length; i++) {
       if (i === selectedIndex) {
@@ -180,26 +295,22 @@
     }
   }
 
-  async function openPopup(initialIncrement = 1) {
+  function openPopup(initialIncrement = 1) {
     chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
       if (!model || !model.tabs) return;
 
       allTabs = model.tabs || [];
       settings = model.settings || {};
 
-      if (card) {
-        card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
-      }
-
+      card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
       host.style.setProperty('--tab-height', `${settings.tabHeight || 42}px`);
       host.style.setProperty('--font-size', `${settings.fontSize || 15}px`);
       host.style.setProperty('--icon-size', `${settings.iconSize || 20}px`);
-      host.style.setProperty('--time-auto-switch-timeout', `${settings.autoSwitchingTimeout || 1000}ms`);
 
       searchQuery = '';
-      if (searchInput) searchInput.value = '';
+      searchInput.value = '';
       filteredTabs = allTabs.slice();
 
       if (allTabs.length > 1) {
@@ -214,7 +325,7 @@
       renderTabs();
 
       setTimeout(() => {
-        if (searchInput) searchInput.focus();
+        searchInput.focus();
       }, 20);
 
       resetAutoSwitchTimer();
@@ -225,12 +336,22 @@
     isOpen = false;
     host.style.display = 'none';
     searchQuery = '';
-    if (searchInput) searchInput.value = '';
+    searchInput.value = '';
     if (autoSwitchTimer) {
       clearTimeout(autoSwitchTimer);
       autoSwitchTimer = null;
     }
   }
+
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.toLowerCase().trim();
+    selectedIndex = 0;
+    updateFilteredTabs();
+    if (autoSwitchTimer) {
+      clearTimeout(autoSwitchTimer);
+      autoSwitchTimer = null;
+    }
+  });
 
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
@@ -262,15 +383,20 @@
 
   window.addEventListener('keyup', (e) => {
     if (!isOpen) return;
-    if ((e.key === 'Alt' || !e.altKey) && !searchQuery) {
+    if ((e.key === 'Alt' || e.key === 'AltGraph' || !e.altKey) && !searchQuery) {
       if (filteredTabs[selectedIndex]) {
         switchTab(filteredTabs[selectedIndex]);
       }
     }
   }, true);
 
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || !message.type) return;
+
+    if (message.type === MessageType.PING) {
+      sendResponse('PONG');
+      return;
+    }
 
     if (message.type === MessageType.SELECT_TAB) {
       const increment = message.increment || 1;

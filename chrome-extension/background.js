@@ -5,6 +5,7 @@
  */
 
 const MessageType = {
+  PING: 'PING',
   ContentScriptStarted: 'ContentScriptStarted',
   ContentScriptStopped: 'ContentScriptStopped',
   SWITCH_TAB: 'SWITCH_TAB',
@@ -37,7 +38,6 @@ let initializedTabIds = new Set();
 let isWindowFocused = true;
 let isSwitchingProgrammatically = false;
 
-// Format tab object safely
 function sanitizeTab(tab) {
   return {
     id: tab.id,
@@ -54,7 +54,6 @@ function isRestrictedUrl(url) {
   return /^(chrome|view-source:|https?:\/\/chrome\.google\.com|chrome-extension:)/.test(url);
 }
 
-// Settings storage helpers
 async function getSettings() {
   const data = await chrome.storage.local.get('settings');
   return { ...defaultSettings, ...(data.settings || {}) };
@@ -67,15 +66,12 @@ async function updateSettings(newSettings) {
   return updated;
 }
 
-// Persist tab order to chrome.storage.local
 function saveTabOrder() {
   chrome.storage.local.set({ tabs: mruTabs });
 }
 
-// Initialize tab list from Chrome windows/tabs & saved storage
 async function initializeTabRegistry() {
-  const [settings, allWindows, storageData] = await Promise.all([
-    getSettings(),
+  const [allWindows, storageData] = await Promise.all([
     chrome.windows.getAll({ populate: true }),
     chrome.storage.local.get('tabs')
   ]);
@@ -92,7 +88,6 @@ async function initializeTabRegistry() {
   const savedTabs = storageData.tabs || [];
   const orderedTabs = [];
 
-  // Restore saved tabs order if they are currently open
   for (const savedTab of savedTabs) {
     if (openTabsMap.has(savedTab.id)) {
       orderedTabs.push(openTabsMap.get(savedTab.id));
@@ -100,12 +95,10 @@ async function initializeTabRegistry() {
     }
   }
 
-  // Append any remaining newly open tabs
   for (const remainingTab of openTabsMap.values()) {
     orderedTabs.push(remainingTab);
   }
 
-  // Ensure active tab is placed at index 0 (top of MRU stack)
   const activeIndex = orderedTabs.findIndex(t => t.active);
   if (activeIndex > 0) {
     const [activeTab] = orderedTabs.splice(activeIndex, 1);
@@ -116,7 +109,6 @@ async function initializeTabRegistry() {
   saveTabOrder();
 }
 
-// Tab order mutators
 function markTabAsActive(tabId) {
   const index = mruTabs.findIndex(t => t.id === tabId);
   if (index !== -1) {
@@ -124,7 +116,6 @@ function markTabAsActive(tabId) {
     tab.active = true;
     mruTabs.unshift(tab);
   }
-  // Reset active flag for other tabs
   for (let i = 1; i < mruTabs.length; i++) {
     mruTabs[i].active = false;
   }
@@ -154,7 +145,6 @@ function removeTab(tabId) {
   saveTabOrder();
 }
 
-// Activate tab programmatically
 async function activateTab({ id, windowId }) {
   isSwitchingProgrammatically = true;
   try {
@@ -165,13 +155,23 @@ async function activateTab({ id, windowId }) {
   } catch (err) {
     console.error(`Failed to activate tab ${id}:`, err);
   } finally {
-    isSwitchingProgrammatically = false;
+    setTimeout(() => {
+      isSwitchingProgrammatically = false;
+    }, 150);
   }
 }
 
-// Ensure content script is injected
+async function isContentScriptActive(tabId) {
+  try {
+    const res = await chrome.tabs.sendMessage(tabId, { type: MessageType.PING });
+    return res === 'PONG';
+  } catch (e) {
+    return false;
+  }
+}
+
 async function ensureContentScriptInjected(tab) {
-  if (initializedTabIds.has(tab.id)) {
+  if (await isContentScriptActive(tab.id)) {
     return true;
   }
 
@@ -180,27 +180,26 @@ async function ensureContentScriptInjected(tab) {
       target: { tabId: tab.id, allFrames: false },
       files: ['content.js']
     });
-    return true;
+    // Give script a short tick to initialize
+    await new Promise(r => setTimeout(r, 60));
+    return await isContentScriptActive(tab.id);
   } catch (err) {
     console.warn(`Could not inject content script into tab ${tab.id}:`, err);
     return false;
   }
 }
 
-// Get active tab in current window
 async function getActiveTabInCurrentWindow() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab;
 }
 
-// Handle shortcut commands (Alt+Y / Alt+Shift+Y)
 async function handleCommand(commandName) {
   const activeTab = await getActiveTabInCurrentWindow();
   if (!activeTab) return;
 
   const sanitized = sanitizeTab(activeTab);
 
-  // Restricted page (chrome://, chrome extension store, etc.): switch directly to previous tab
   if (isRestrictedUrl(sanitized.url)) {
     const previouslyActive = mruTabs.find(t => !isRestrictedUrl(t.url) && t.id !== sanitized.id);
     if (previouslyActive) {
@@ -218,7 +217,6 @@ async function handleCommand(commandName) {
         increment
       });
     } catch (err) {
-      // If messaging fails, fallback to direct tab switch
       const previouslyActive = mruTabs.find(t => t.id !== sanitized.id);
       if (previouslyActive) {
         await activateTab(previouslyActive);
@@ -232,7 +230,6 @@ async function handleCommand(commandName) {
   }
 }
 
-// Event Listeners for Chrome Tab events
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     isWindowFocused = false;
@@ -257,7 +254,6 @@ chrome.tabs.onCreated.addListener((tab) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
-    initializedTabIds.delete(tabId);
     addOrUpdateTab(tab);
   }
 });
@@ -277,7 +273,6 @@ chrome.commands.onCommand.addListener((command) => {
   handleCommand(command);
 });
 
-// Runtime Message Listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message !== 'object' || !message.type) {
     return;
@@ -305,17 +300,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (sender.tab && sender.tab.id) {
             zoomFactor = await chrome.tabs.getZoom(sender.tab.id);
           }
-        } catch (e) {
-          // ignore zoom error
-        }
-        // Return all open tabs in MRU order (no limit)
+        } catch (e) {}
         sendResponse({
           tabs: mruTabs.slice(),
           settings,
           zoomFactor
         });
       })();
-      return true; // Keep sendResponse open for async response
+      return true;
     }
     case MessageType.SWITCH_TAB: {
       if (message.selectedTab) {
@@ -350,5 +342,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Initial startup execution
 initializeTabRegistry();
