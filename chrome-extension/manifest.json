@@ -39,7 +39,9 @@
         "<all_urls>"
       ],
       "resources": [
-        "/_favicon/*"
+        "/_favicon/*",
+        "overlay.css",
+        "overlay.html"
       ]
     }
   ]
