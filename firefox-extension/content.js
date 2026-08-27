@@ -1,6 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Content Script
  * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
+ * High-craft, dual-theme Command Palette UI inspired by Raycast & Linear.
  * Closes automatically if window loses focus.
  * Draggable overlay card with viewport center-relative position memory.
  */
@@ -18,6 +19,7 @@
     GET_MODEL: 'GET_MODEL',
     CLOSE_POPUP: 'CLOSE_POPUP',
     TOGGLE_WALKER: 'TOGGLE_WALKER',
+    SEARCH_WEB: 'SEARCH_WEB',
     SAVE_POSITION: 'SAVE_POSITION'
   };
 
@@ -56,7 +58,8 @@
       padding-top: 18vh;
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+      letter-spacing: -0.01em;
       background: rgba(0, 0, 0, 0.4);
       opacity: var(--popup-opacity, 1);
     }
@@ -64,99 +67,198 @@
       display: flex !important;
     }
     .card {
-      --card-color: #202124;
-      --card-bg: #e4e7ea;
-      --tab-selected-bg: #ffffff;
-      --tab-hover-bg: #f1f2f5;
-      --search-border: #ccc;
-      --search-bg: #ffffff;
+      --card-bg: #FFFFFF;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --card-color: #334155;
+      --shadow-modal: 0 20px 40px -12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --search-bg: #F1F3F5;
+      --search-color: #0F172A;
+      --search-placeholder: #94A3B8;
+      --search-border: rgba(0, 0, 0, 0.06);
+      --search-focus-border: rgba(79, 86, 233, 0.4);
+      --search-focus-glow: 0 0 0 2px rgba(79, 86, 233, 0.12);
+      --search-icon-color: #94A3B8;
+      --tab-selected-bg: #F1F3F9;
+      --tab-selected-border: rgba(0, 0, 0, 0.04);
+      --tab-selected-color: #0F172A;
+      --tab-hover-bg: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --badge-bg: rgba(0, 0, 0, 0.04);
+      --badge-color: #64748B;
+      --badge-border: rgba(0, 0, 0, 0.06);
+      --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
       background: var(--card-bg);
-      border-radius: 10px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-modal);
       color: var(--card-color);
       width: var(--popup-width, 460px);
       max-width: 90vw;
       max-height: var(--popup-height, 500px);
+      padding: 12px 12px 10px 12px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
     }
     .card.card_dark {
-      --card-color: #e9ebec;
-      --card-bg: #252629;
-      --tab-selected-bg: #35393c;
-      --tab-hover-bg: #2e3133;
-      --search-border: #444;
-      --search-bg: #1e1f21;
+      --card-bg: #111215;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-color: #C4C7D0;
+      --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      --search-bg: rgba(255, 255, 255, 0.04);
+      --search-color: #FFFFFF;
+      --search-placeholder: #5C606E;
+      --search-border: rgba(255, 255, 255, 0.06);
+      --search-focus-border: rgba(79, 86, 233, 0.5);
+      --search-focus-glow: 0 0 0 2px rgba(79, 86, 233, 0.15);
+      --search-icon-color: #5C606E;
+      --tab-selected-bg: rgba(255, 255, 255, 0.06);
+      --tab-selected-border: rgba(255, 255, 255, 0.05);
+      --tab-selected-color: #FFFFFF;
+      --tab-hover-bg: rgba(255, 255, 255, 0.03);
+      --text-secondary: #5C606E;
+      --badge-bg: rgba(255, 255, 255, 0.06);
+      --badge-color: #8C909F;
+      --badge-border: rgba(255, 255, 255, 0.08);
+      --scrollbar-thumb: rgba(255, 255, 255, 0.15);
     }
     .search-container {
+      position: relative;
       flex-shrink: 0;
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-      background: transparent;
+      width: 100%;
+      margin-bottom: 8px;
       cursor: grab;
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      fill: var(--search-icon-color);
+      pointer-events: none;
+      transition: fill 0.15s ease;
     }
     .search-input {
       width: 100%;
-      padding: 9px 12px;
-      font-size: 14px;
+      height: 36px;
+      padding: 0 12px 0 34px;
+      font-size: 13px;
+      font-family: inherit;
       border: 1px solid var(--search-border);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--search-bg);
-      color: var(--card-color);
+      color: var(--search-color);
       outline: none;
-      transition: border-color 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
       cursor: text;
     }
+    .search-input::placeholder {
+      color: var(--search-placeholder);
+    }
     .search-input:focus {
-      border-color: #448aff;
+      border-color: var(--search-focus-border);
+      box-shadow: var(--search-focus-glow);
     }
     .tabs-list {
       flex: 1 1 auto;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 2px 0;
       margin: 0;
       scroll-behavior: smooth;
+    }
+    .tabs-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .tabs-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .tabs-list::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 2px;
     }
     .tab {
       display: flex;
       align-items: center;
-      height: var(--tab-height, 42px);
-      padding: 0 16px;
+      justify-content: space-between;
+      height: var(--tab-height, 38px);
+      padding: 0 10px;
+      border-radius: 8px;
       cursor: pointer;
-      position: relative;
       user-select: none;
-      transition: background-color 0.1s ease;
+      border: 1px solid transparent;
+      transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
     }
     .tab:hover {
       background-color: var(--tab-hover-bg);
     }
     .tab.tab_selected {
       background-color: var(--tab-selected-bg);
-      font-weight: 600;
+      border-color: var(--tab-selected-border);
+      color: var(--tab-selected-color);
+    }
+    .tab__info {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      flex: 1;
+      margin-right: 8px;
+    }
+    .tab__icon-wrapper {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-right: 10px;
+      overflow: hidden;
     }
     .tab__icon {
-      width: var(--icon-size, 20px);
-      height: var(--icon-size, 20px);
-      margin-right: 12px;
-      flex-shrink: 0;
+      width: var(--icon-size, 16px);
+      height: var(--icon-size, 16px);
       object-fit: contain;
-      border-radius: 2px;
     }
     .tab__text {
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: var(--font-size, 15px);
+      font-size: var(--font-size, 12.5px);
+      font-weight: 500;
+      color: inherit;
+    }
+    .tab__badge {
+      font-size: 11px;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-variant-numeric: tabular-nums;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-color);
+      border: 1px solid var(--badge-border);
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+    .tab.tab_selected .tab__badge,
+    .tab:hover .tab__badge {
+      opacity: 1;
     }
     .no-results {
-      padding: 20px;
+      padding: 24px 16px;
       text-align: center;
-      opacity: 0.6;
-      font-size: 14px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.5;
     }
   `;
 
@@ -170,11 +272,22 @@
   const searchContainer = document.createElement('div');
   searchContainer.className = 'search-container';
 
+  const searchIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  searchIconSvg.setAttribute('class', 'search-icon');
+  searchIconSvg.setAttribute('viewBox', '0 0 24 24');
+  searchIconSvg.setAttribute('width', '14');
+  searchIconSvg.setAttribute('height', '14');
+
+  const searchPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  searchPath.setAttribute('d', 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z');
+  searchIconSvg.appendChild(searchPath);
+
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.className = 'search-input';
   searchInput.placeholder = 'Search open tabs...';
 
+  searchContainer.appendChild(searchIconSvg);
   searchContainer.appendChild(searchInput);
 
   const tabsList = document.createElement('div');
@@ -313,7 +426,7 @@
   });
 
   function getFaviconUrl(tab) {
-    if (tab.favIconUrl && !tab.favIconUrl.startsWith('about:') && !tab.favIconUrl.startsWith('moz-extension:')) {
+    if (tab.favIconUrl && !tab.favIconUrl.startsWith('chrome://')) {
       return tab.favIconUrl;
     }
     return fallbackFaviconSvg;
@@ -342,7 +455,11 @@
     if (filteredTabs.length === 0) {
       const noResults = document.createElement('div');
       noResults.className = 'no-results';
-      noResults.textContent = 'No matching tabs found';
+      if (searchQuery) {
+        noResults.textContent = `No matching tabs. Press Enter to search web for "${searchQuery}"`;
+      } else {
+        noResults.textContent = 'No matching tabs found';
+      }
       tabsList.appendChild(noResults);
       return;
     }
@@ -351,17 +468,32 @@
       const tabEl = document.createElement('div');
       tabEl.className = 'tab' + (index === selectedIndex ? ' tab_selected' : '');
 
+      const infoEl = document.createElement('div');
+      infoEl.className = 'tab__info';
+
+      const iconWrapper = document.createElement('div');
+      iconWrapper.className = 'tab__icon-wrapper';
+
       const img = document.createElement('img');
       img.className = 'tab__icon';
       img.src = getFaviconUrl(tab);
       img.onerror = () => { img.src = fallbackFaviconSvg; };
 
-      const textEl = document.createElement('div');
+      iconWrapper.appendChild(img);
+
+      const textEl = document.createElement('span');
       textEl.className = 'tab__text';
       textEl.textContent = tab.title || tab.url || 'Untitled Tab';
 
-      tabEl.appendChild(img);
-      tabEl.appendChild(textEl);
+      infoEl.appendChild(iconWrapper);
+      infoEl.appendChild(textEl);
+
+      const badgeEl = document.createElement('span');
+      badgeEl.className = 'tab__badge';
+      badgeEl.textContent = '↵ Jump';
+
+      tabEl.appendChild(infoEl);
+      tabEl.appendChild(badgeEl);
 
       tabEl.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -410,6 +542,14 @@
       card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
+      host.style.setProperty('--popup-height', `${settings.windowHeight || 500}px`);
+
+      if (settings.fontSize) {
+        host.style.setProperty('--font-size', `${settings.fontSize}px`);
+      }
+      if (settings.iconSize) {
+        host.style.setProperty('--icon-size', `${settings.iconSize}px`);
+      }
 
       searchQuery = '';
       searchInput.value = '';
@@ -436,78 +576,89 @@
     searchInput.value = '';
   }
 
-  // Live search filtering
-  searchInput.addEventListener('input', () => {
-    searchQuery = searchInput.value.toLowerCase().trim();
+  // Keyboard navigation & search input listener
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
     selectedIndex = 0;
     updateFilteredTabs();
   });
 
-  // Keyboard navigation & selection
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
 
-    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+    if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
+      closePopup();
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      e.stopPropagation();
       if (filteredTabs.length > 0) {
         selectedIndex = (selectedIndex + 1) % filteredTabs.length;
         highlightSelectedTab();
       }
-    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
+      e.stopPropagation();
       if (filteredTabs.length > 0) {
         selectedIndex = (selectedIndex - 1 + filteredTabs.length) % filteredTabs.length;
         highlightSelectedTab();
       }
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filteredTabs[selectedIndex]) {
-        switchTab(filteredTabs[selectedIndex]);
-      }
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      closePopup();
-    }
-  }, true);
-
-  // Close when clicking outside card overlay
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      closePopup();
-    }
-  });
-
-  // Close popup automatically if window loses focus or document becomes hidden
-  window.addEventListener('blur', () => {
-    if (isOpen) {
-      closePopup();
-    }
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && isOpen) {
-      closePopup();
-    }
-  });
-
-  api.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!message || !message.type) return;
-
-    if (message.type === MessageType.PING) {
-      sendResponse('PONG');
       return;
     }
 
-    if (message.type === MessageType.TOGGLE_WALKER) {
-      if (!isOpen) {
-        openPopup();
-      } else {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (filteredTabs.length > 0 && filteredTabs[selectedIndex]) {
+        switchTab(filteredTabs[selectedIndex]);
+      } else if (searchQuery.trim().length > 0) {
         closePopup();
+        api.runtime.sendMessage({
+          type: MessageType.SEARCH_WEB,
+          query: searchQuery.trim()
+        });
       }
-    } else if (message.type === MessageType.CLOSE_POPUP) {
+    }
+  }, true);
+
+  // Auto-hide when window loses focus or document becomes hidden
+  window.addEventListener('blur', () => {
+    if (isOpen) closePopup();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isOpen) closePopup();
+  });
+
+  // Message listener from background script
+  api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === MessageType.PING) {
+      sendResponse({ status: 'ok' });
+      return true;
+    }
+    if (message.type === MessageType.TOGGLE_WALKER) {
+      if (isOpen) {
+        closePopup();
+      } else {
+        openPopup();
+      }
+      sendResponse({ status: 'ok' });
+      return true;
+    }
+    if (message.type === MessageType.CLOSE_POPUP) {
       closePopup();
+      sendResponse({ status: 'ok' });
+      return true;
     }
   });
 
+  // Notify background script that content script is ready
   api.runtime.sendMessage({ type: MessageType.ContentScriptStarted });
 })();
