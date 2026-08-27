@@ -2,6 +2,17 @@
   box-sizing: border-box;
 }
 
+:root {
+  --setting-label-color: #3c4043;
+  --badge-bg: rgba(0, 0, 0, 0.06);
+  --badge-color: #5f6368;
+  --track-bg: #e4e7ea;
+  --track-border: rgba(0, 0, 0, 0.12);
+  --tick-bg: rgba(0, 0, 0, 0.18);
+  --thumb-bg: #1a73e8;
+  --thumb-active-bg: #1557b0;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -33,7 +44,7 @@ body {
 .settings-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .setting-row {
@@ -58,16 +69,119 @@ body {
   margin-top: 2px;
 }
 
-input[type="range"] {
-  width: 130px;
-  cursor: pointer;
-}
-
 input[type="checkbox"].toggle-switch {
   width: 18px;
   height: 18px;
   cursor: pointer;
   accent-color: #1a73e8;
+}
+
+/* Stepped Capsule Slider Styling */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slider-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--setting-label-color);
+  cursor: pointer;
+}
+
+.slider-badge {
+  font-size: 11px;
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-variant-numeric: tabular-nums;
+  background: var(--badge-bg);
+  color: var(--badge-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.capsule-track-wrapper {
+  position: relative;
+  width: 100%;
+  height: 28px;
+}
+
+.capsule-range-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  z-index: 3;
+}
+
+.capsule-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 14px;
+  background: var(--track-bg);
+  border: 1px solid var(--track-border);
+  box-sizing: border-box;
+  pointer-events: none;
+  overflow: hidden;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.ticks-container {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.tick-mark {
+  width: 2px;
+  height: 4px;
+  background: var(--tick-bg);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.capsule-thumb {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--thumb-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transform: translateY(-50%);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Micro-interactions */
+.capsule-track-wrapper:hover .capsule-thumb {
+  transform: translateY(-50%) scaleY(1.1);
+}
+
+.capsule-range-input:active ~ .capsule-track .capsule-thumb {
+  transform: translateY(-50%) scale(0.9, 1.15);
+  background: var(--thumb-active-bg);
 }
 
 .actions {
@@ -111,6 +225,15 @@ input[type="checkbox"].toggle-switch {
 
 /* Dark Theme Styles for Settings Page */
 body.dark-theme {
+  --setting-label-color: #C4C7D0;
+  --badge-bg: rgba(255, 255, 255, 0.06);
+  --badge-color: #8C909C;
+  --track-bg: #18191E;
+  --track-border: rgba(255, 255, 255, 0.05);
+  --tick-bg: rgba(255, 255, 255, 0.12);
+  --thumb-bg: #F1F3F5;
+  --thumb-active-bg: #ffffff;
+
   background-color: #252629;
   color: #e9ebec;
 }

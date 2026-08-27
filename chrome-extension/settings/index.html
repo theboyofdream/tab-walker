@@ -22,43 +22,78 @@
       </div>
 
       <!-- Popup Width -->
-      <div class="setting-row">
-        <label for="popupWidth" class="setting-label">
-          <span>Popup Width (<span id="popupWidth-val">460</span>px)</span>
-        </label>
-        <input type="range" id="popupWidth" min="300" max="800" step="10" value="460">
+      <div class="slider-group" data-unit="px">
+        <div class="slider-header">
+          <label for="popupWidth" class="slider-label">Popup Width</label>
+          <span class="slider-badge" id="popupWidth-badge">460px</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="popupWidth" min="300" max="800" step="25" value="460" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="ticks-container" id="popupWidth-ticks"></div>
+            <div class="capsule-thumb" id="popupWidth-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Max Window Height -->
-      <div class="setting-row">
-        <label for="windowHeight" class="setting-label">
-          <span>Max Window Height (<span id="windowHeight-val">500</span>px)</span>
-        </label>
-        <input type="range" id="windowHeight" min="200" max="900" step="10" value="500">
+      <div class="slider-group" data-unit="px">
+        <div class="slider-header">
+          <label for="windowHeight" class="slider-label">Max Window Height</label>
+          <span class="slider-badge" id="windowHeight-badge">500px</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="windowHeight" min="200" max="900" step="25" value="500" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="ticks-container" id="windowHeight-ticks"></div>
+            <div class="capsule-thumb" id="windowHeight-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Font Size -->
-      <div class="setting-row">
-        <label for="fontSize" class="setting-label">
-          <span>Font Size (<span id="fontSize-val">15</span>px)</span>
-        </label>
-        <input type="range" id="fontSize" min="12" max="22" step="1" value="15">
+      <div class="slider-group" data-unit="px">
+        <div class="slider-header">
+          <label for="fontSize" class="slider-label">Font Size</label>
+          <span class="slider-badge" id="fontSize-badge">15px</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="fontSize" min="12" max="22" step="1" value="15" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="ticks-container" id="fontSize-ticks"></div>
+            <div class="capsule-thumb" id="fontSize-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Icon Size -->
-      <div class="setting-row">
-        <label for="iconSize" class="setting-label">
-          <span>Icon Size (<span id="iconSize-val">20</span>px)</span>
-        </label>
-        <input type="range" id="iconSize" min="14" max="32" step="2" value="20">
+      <div class="slider-group" data-unit="px">
+        <div class="slider-header">
+          <label for="iconSize" class="slider-label">Icon Size</label>
+          <span class="slider-badge" id="iconSize-badge">20px</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="iconSize" min="14" max="32" step="2" value="20" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="ticks-container" id="iconSize-ticks"></div>
+            <div class="capsule-thumb" id="iconSize-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Opacity -->
-      <div class="setting-row">
-        <label for="opacity" class="setting-label">
-          <span>Overlay Opacity (<span id="opacity-val">100</span>%)</span>
-        </label>
-        <input type="range" id="opacity" min="50" max="100" step="5" value="100">
+      <div class="slider-group" data-unit="%">
+        <div class="slider-header">
+          <label for="opacity" class="slider-label">Overlay Opacity</label>
+          <span class="slider-badge" id="opacity-badge">100%</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="opacity" min="50" max="100" step="5" value="100" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="ticks-container" id="opacity-ticks"></div>
+            <div class="capsule-thumb" id="opacity-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Switch on close -->
