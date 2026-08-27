@@ -2,7 +2,7 @@
  * Tab Walker - Firefox Extension Content Script
  * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
  * Closes automatically if window loses focus.
- * Supports draggable overlay card with position memory.
+ * Draggable overlay card with viewport center-relative position memory.
  */
 
 (function () {
@@ -254,12 +254,61 @@
       searchContainer.style.cursor = 'grab';
 
       const rect = card.getBoundingClientRect();
-      const pos = { left: Math.round(rect.left), top: Math.round(rect.top) };
+      const cardCenterX = rect.left + rect.width / 2;
+      const cardCenterY = rect.top + rect.height / 2;
+
+      const viewportCenterX = window.innerWidth / 2;
+      const viewportCenterY = window.innerHeight / 2;
+
+      const posOffset = {
+        offsetX: Math.round(cardCenterX - viewportCenterX),
+        offsetY: Math.round(cardCenterY - viewportCenterY)
+      };
+
+      settings.position = posOffset;
 
       api.runtime.sendMessage({
         type: MessageType.SAVE_POSITION,
-        position: pos
+        position: posOffset
       });
+    }
+  });
+
+  function applyCardPosition() {
+    if (settings.position && typeof settings.position.offsetX === 'number' && typeof settings.position.offsetY === 'number') {
+      overlay.style.alignItems = 'flex-start';
+      overlay.style.justifyContent = 'flex-start';
+      overlay.style.paddingTop = '0';
+
+      const cardWidth = card.offsetWidth || settings.popupWidth || 460;
+      const cardHeight = card.offsetHeight || 300;
+
+      const viewportCenterX = window.innerWidth / 2;
+      const viewportCenterY = window.innerHeight / 2;
+
+      let targetLeft = viewportCenterX + settings.position.offsetX - (cardWidth / 2);
+      let targetTop = viewportCenterY + settings.position.offsetY - (cardHeight / 2);
+
+      targetLeft = Math.max(10, Math.min(window.innerWidth - cardWidth - 10, targetLeft));
+      targetTop = Math.max(10, Math.min(window.innerHeight - 80, targetTop));
+
+      card.style.position = 'absolute';
+      card.style.left = `${Math.round(targetLeft)}px`;
+      card.style.top = `${Math.round(targetTop)}px`;
+    } else {
+      overlay.style.alignItems = 'flex-start';
+      overlay.style.justifyContent = 'center';
+      overlay.style.paddingTop = '18vh';
+
+      card.style.position = 'relative';
+      card.style.left = 'auto';
+      card.style.top = 'auto';
+    }
+  }
+
+  window.addEventListener('resize', () => {
+    if (isOpen) {
+      applyCardPosition();
     }
   });
 
@@ -362,24 +411,6 @@
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
 
-      if (settings.position && typeof settings.position.left === 'number' && typeof settings.position.top === 'number') {
-        overlay.style.alignItems = 'flex-start';
-        overlay.style.justifyContent = 'flex-start';
-        overlay.style.paddingTop = '0';
-
-        card.style.position = 'absolute';
-        card.style.left = `${settings.position.left}px`;
-        card.style.top = `${settings.position.top}px`;
-      } else {
-        overlay.style.alignItems = 'flex-start';
-        overlay.style.justifyContent = 'center';
-        overlay.style.paddingTop = '18vh';
-
-        card.style.position = 'relative';
-        card.style.left = 'auto';
-        card.style.top = 'auto';
-      }
-
       searchQuery = '';
       searchInput.value = '';
       filteredTabs = allTabs.slice();
@@ -390,6 +421,7 @@
       isOpen = true;
 
       renderTabs();
+      applyCardPosition();
 
       setTimeout(() => {
         searchInput.focus();
