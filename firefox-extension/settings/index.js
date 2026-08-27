@@ -10,6 +10,7 @@ const defaultSettings = {
   isDarkTheme: false,
   popupWidth: 460,
   windowHeight: 500,
+  tabHeight: 42,
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
@@ -21,13 +22,14 @@ const fields = [
   'isDarkTheme',
   'popupWidth',
   'windowHeight',
+  'tabHeight',
   'fontSize',
   'iconSize',
   'opacity',
   'isSwitchingToPreviouslyUsedTab'
 ];
 
-const sliderIds = ['popupWidth', 'windowHeight', 'fontSize', 'iconSize', 'opacity'];
+const sliderIds = ['popupWidth', 'windowHeight', 'tabHeight', 'fontSize', 'iconSize', 'opacity'];
 const toggleIds = ['isDarkTheme', 'isSwitchingToPreviouslyUsedTab'];
 
 const form = document.getElementById('settings-form');
@@ -62,7 +64,6 @@ function generateTicksForSlider(sliderId) {
   const step = Number(input.step) || 1;
 
   const totalSteps = Math.floor((max - min) / step);
-  // Target 5-6 tick markers discrete spacing along track
   const displayStepCount = totalSteps > 10 ? Math.ceil(totalSteps / 5) : 1;
 
   for (let i = 0; i <= totalSteps; i += displayStepCount) {
@@ -86,7 +87,6 @@ function updateCapsuleThumb(sliderId, value) {
   const max = Number(input.max);
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-  // Thumb width = 6px, left inset = 4px, right inset = 4px
   thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 14}px)`;
 
   if (fill) {

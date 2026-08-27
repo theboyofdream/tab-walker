@@ -551,6 +551,9 @@
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
       host.style.setProperty('--popup-height', `${settings.windowHeight || 500}px`);
 
+      if (settings.tabHeight) {
+        host.style.setProperty('--tab-height', `${settings.tabHeight}px`);
+      }
       if (settings.fontSize) {
         host.style.setProperty('--font-size', `${settings.fontSize}px`);
       }
