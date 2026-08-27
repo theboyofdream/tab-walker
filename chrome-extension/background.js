@@ -11,6 +11,7 @@ const MessageType = {
   CLOSE_POPUP: 'CLOSE_POPUP',
   TOGGLE_WALKER: 'TOGGLE_WALKER',
   SEARCH_WEB: 'SEARCH_WEB',
+  SAVE_POSITION: 'SAVE_POSITION',
   GetSettings: 'GetSettings',
   SetSettings: 'SetSettings'
 };
@@ -22,7 +23,8 @@ const defaultSettings = {
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
-  isSwitchingToPreviouslyUsedTab: true
+  isSwitchingToPreviouslyUsedTab: true,
+  position: null
 };
 
 let mruTabs = [];
@@ -276,6 +278,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             url: `https://www.google.com/search?q=${encodeURIComponent(message.query)}`
           });
         }
+      }
+      break;
+    }
+    case MessageType.SAVE_POSITION: {
+      if (message.position) {
+        updateSettings({ position: message.position });
       }
       break;
     }

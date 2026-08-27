@@ -12,6 +12,7 @@ const MessageType = {
   GET_MODEL: 'GET_MODEL',
   CLOSE_POPUP: 'CLOSE_POPUP',
   TOGGLE_WALKER: 'TOGGLE_WALKER',
+  SAVE_POSITION: 'SAVE_POSITION',
   GetSettings: 'GetSettings',
   SetSettings: 'SetSettings'
 };
@@ -23,7 +24,8 @@ const defaultSettings = {
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
-  isSwitchingToPreviouslyUsedTab: true
+  isSwitchingToPreviouslyUsedTab: true,
+  position: null
 };
 
 let mruTabs = [];
@@ -253,6 +255,12 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case MessageType.SWITCH_TAB: {
       if (message.selectedTab) {
         activateTab(message.selectedTab);
+      }
+      break;
+    }
+    case MessageType.SAVE_POSITION: {
+      if (message.position) {
+        updateSettings({ position: message.position });
       }
       break;
     }

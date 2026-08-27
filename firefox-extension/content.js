@@ -2,6 +2,7 @@
  * Tab Walker - Firefox Extension Content Script
  * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
  * Closes automatically if window loses focus.
+ * Supports draggable overlay card with position memory.
  */
 
 (function () {
@@ -16,7 +17,8 @@
     SWITCH_TAB: 'SWITCH_TAB',
     GET_MODEL: 'GET_MODEL',
     CLOSE_POPUP: 'CLOSE_POPUP',
-    TOGGLE_WALKER: 'TOGGLE_WALKER'
+    TOGGLE_WALKER: 'TOGGLE_WALKER',
+    SAVE_POSITION: 'SAVE_POSITION'
   };
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
@@ -93,6 +95,7 @@
       padding: 12px 14px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       background: transparent;
+      cursor: grab;
     }
     .search-input {
       width: 100%;
@@ -104,6 +107,7 @@
       color: var(--card-color);
       outline: none;
       transition: border-color 0.15s ease;
+      cursor: text;
     }
     .search-input:focus {
       border-color: #448aff;
@@ -204,6 +208,61 @@
   let settings = {};
   let searchQuery = '';
 
+  // Dragging state
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let initialLeft = 0;
+  let initialTop = 0;
+
+  searchContainer.addEventListener('mousedown', (e) => {
+    if (e.target === searchInput) return;
+
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const rect = card.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+
+    searchContainer.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+
+    const newLeft = Math.max(10, Math.min(window.innerWidth - card.offsetWidth - 10, initialLeft + deltaX));
+    const newTop = Math.max(10, Math.min(window.innerHeight - 80, initialTop + deltaY));
+
+    overlay.style.alignItems = 'flex-start';
+    overlay.style.justifyContent = 'flex-start';
+    overlay.style.paddingTop = '0';
+
+    card.style.position = 'absolute';
+    card.style.left = `${newLeft}px`;
+    card.style.top = `${newTop}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      searchContainer.style.cursor = 'grab';
+
+      const rect = card.getBoundingClientRect();
+      const pos = { left: Math.round(rect.left), top: Math.round(rect.top) };
+
+      api.runtime.sendMessage({
+        type: MessageType.SAVE_POSITION,
+        position: pos
+      });
+    }
+  });
+
   function getFaviconUrl(tab) {
     if (tab.favIconUrl && !tab.favIconUrl.startsWith('about:') && !tab.favIconUrl.startsWith('moz-extension:')) {
       return tab.favIconUrl;
@@ -302,6 +361,24 @@
       card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
+
+      if (settings.position && typeof settings.position.left === 'number' && typeof settings.position.top === 'number') {
+        overlay.style.alignItems = 'flex-start';
+        overlay.style.justifyContent = 'flex-start';
+        overlay.style.paddingTop = '0';
+
+        card.style.position = 'absolute';
+        card.style.left = `${settings.position.left}px`;
+        card.style.top = `${settings.position.top}px`;
+      } else {
+        overlay.style.alignItems = 'flex-start';
+        overlay.style.justifyContent = 'center';
+        overlay.style.paddingTop = '18vh';
+
+        card.style.position = 'relative';
+        card.style.left = 'auto';
+        card.style.top = 'auto';
+      }
 
       searchQuery = '';
       searchInput.value = '';
