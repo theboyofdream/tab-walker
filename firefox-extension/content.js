@@ -51,7 +51,7 @@
       display: none;
       align-items: flex-start;
       justify-content: center;
-      padding-top: calc(50vh - 30px);
+      padding-top: 18vh;
       width: 100%;
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -75,7 +75,7 @@
       color: var(--card-color);
       width: var(--popup-width, 460px);
       max-width: 90vw;
-      max-height: var(--popup-height, 45vh);
+      max-height: var(--popup-height, 500px);
       display: flex;
       flex-direction: column;
       overflow: hidden;
