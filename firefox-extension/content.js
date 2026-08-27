@@ -49,9 +49,8 @@
     .overlay {
       box-sizing: border-box;
       display: none;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
-      padding-top: 18vh;
       width: 100%;
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
