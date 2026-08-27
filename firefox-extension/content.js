@@ -49,8 +49,9 @@
     .overlay {
       box-sizing: border-box;
       display: none;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      padding-top: 18vh;
       width: 100%;
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -88,6 +89,7 @@
       --search-bg: #1e1f21;
     }
     .search-container {
+      flex-shrink: 0;
       padding: 12px 14px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       background: transparent;
@@ -107,7 +109,7 @@
       border-color: #448aff;
     }
     .tabs-list {
-      flex: 1;
+      flex: 1 1 auto;
       overflow-y: auto;
       overflow-x: hidden;
       padding: 6px 0;
