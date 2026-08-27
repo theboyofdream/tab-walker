@@ -6,7 +6,7 @@
 const defaultSettings = {
   isDarkTheme: false,
   popupWidth: 460,
-  tabHeight: 42,
+  windowHeight: 500,
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
@@ -16,7 +16,7 @@ const defaultSettings = {
 const fields = [
   'isDarkTheme',
   'popupWidth',
-  'tabHeight',
+  'windowHeight',
   'fontSize',
   'iconSize',
   'opacity',
@@ -28,7 +28,7 @@ const resetBtn = document.getElementById('reset-btn');
 const saveStatus = document.getElementById('save-status');
 
 function updateValueDisplays(settings) {
-  ['popupWidth', 'tabHeight', 'fontSize', 'iconSize', 'opacity'].forEach(field => {
+  ['popupWidth', 'windowHeight', 'fontSize', 'iconSize', 'opacity'].forEach(field => {
     const valEl = document.getElementById(`${field}-val`);
     if (valEl) {
       valEl.textContent = settings[field];

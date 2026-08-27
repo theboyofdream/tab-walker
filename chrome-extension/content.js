@@ -71,8 +71,9 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
       color: var(--card-color);
       width: var(--popup-width, 460px);
+      height: var(--popup-height, 500px);
       max-width: 90vw;
-      max-height: 80vh;
+      max-height: 85vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -306,7 +307,7 @@
       card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
       host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
-      host.style.setProperty('--tab-height', `${settings.tabHeight || 42}px`);
+      host.style.setProperty('--popup-height', `${settings.windowHeight || 500}px`);
 
       searchQuery = '';
       searchInput.value = '';

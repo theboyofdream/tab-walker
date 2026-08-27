@@ -17,7 +17,7 @@ const MessageType = {
 const defaultSettings = {
   isDarkTheme: false,
   popupWidth: 460,
-  tabHeight: 42,
+  windowHeight: 500,
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
