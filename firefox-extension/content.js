@@ -189,6 +189,8 @@
       align-items: center;
       justify-content: space-between;
       height: var(--tab-height, 42px);
+      min-height: var(--tab-height, 42px);
+      flex-shrink: 0;
       padding: 0 16px;
       border-radius: 8px;
       cursor: pointer;
@@ -544,9 +546,7 @@
       host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
       host.style.setProperty('--popup-height', `${settings.windowHeight || 500}px`);
 
-      if (settings.tabHeight) {
-        host.style.setProperty('--tab-height', `${settings.tabHeight}px`);
-      }
+      host.style.setProperty('--tab-height', `${settings.tabHeight || 42}px`);
       if (settings.fontSize) {
         host.style.setProperty('--font-size', `${settings.fontSize}px`);
       }
