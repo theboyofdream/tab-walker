@@ -143,9 +143,9 @@
     }
     .search-input {
       width: 100%;
-      height: 36px;
+      height: 38px;
       padding: 0 12px 0 34px;
-      font-size: 13px;
+      font-size: 14px;
       font-family: inherit;
       border: 1px solid var(--search-border);
       border-radius: 8px;
@@ -187,8 +187,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: var(--tab-height, 38px);
-      padding: 0 10px;
+      height: var(--tab-height, 42px);
+      padding: 0 16px;
       border-radius: 8px;
       cursor: pointer;
       user-select: none;
@@ -208,22 +208,22 @@
       align-items: center;
       min-width: 0;
       flex: 1;
-      margin-right: 8px;
+      margin-right: 12px;
     }
     .tab__icon-wrapper {
-      width: 18px;
-      height: 18px;
-      border-radius: 4px;
+      width: var(--icon-size, 20px);
+      height: var(--icon-size, 20px);
+      border-radius: 3px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      margin-right: 10px;
+      margin-right: 12px;
       overflow: hidden;
     }
     .tab__icon {
-      width: var(--icon-size, 16px);
-      height: var(--icon-size, 16px);
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
     .tab__text {
@@ -231,12 +231,12 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: var(--font-size, 12.5px);
+      font-size: var(--font-size, 15px);
       font-weight: 500;
       color: inherit;
     }
     .tab__badge {
-      font-size: 11px;
+      font-size: 11.5px;
       font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
       font-variant-numeric: tabular-nums;
       padding: 2px 6px;
@@ -256,7 +256,7 @@
       padding: 24px 16px;
       text-align: center;
       color: var(--text-secondary);
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.5;
     }
   `;
