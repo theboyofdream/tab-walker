@@ -1,7 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Settings Script
  * Synchronizes options UI with browser.storage.local.
- * Implements Stepped Capsule Slider and Craft Toggle Switch controls with filled track background.
+ * Implements Stepped Capsule Slider and Craft Toggle Switch controls with dual theme support.
  */
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
@@ -37,8 +37,10 @@ const saveStatus = document.getElementById('save-status');
 function applyTheme(isDark) {
   if (isDark) {
     document.body.classList.add('dark-theme');
+    document.body.setAttribute('data-theme', 'dark');
   } else {
     document.body.classList.remove('dark-theme');
+    document.body.setAttribute('data-theme', 'light');
   }
 }
 
@@ -60,7 +62,8 @@ function generateTicksForSlider(sliderId) {
   const step = Number(input.step) || 1;
 
   const totalSteps = Math.floor((max - min) / step);
-  const displayStepCount = totalSteps > 25 ? Math.ceil(totalSteps / 15) : 1;
+  // Target 5-6 tick markers discrete spacing along track
+  const displayStepCount = totalSteps > 10 ? Math.ceil(totalSteps / 5) : 1;
 
   for (let i = 0; i <= totalSteps; i += displayStepCount) {
     const tick = document.createElement('div');
@@ -83,10 +86,11 @@ function updateCapsuleThumb(sliderId, value) {
   const max = Number(input.max);
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-  thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 16}px)`;
+  // Thumb width = 6px, left inset = 4px, right inset = 4px
+  thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 14}px)`;
 
   if (fill) {
-    fill.style.width = `calc(8px + ${pct * 100}% - ${pct * 16}px)`;
+    fill.style.width = `calc(7px + ${pct * 100}% - ${pct * 14}px)`;
   }
 
   if (badge) {
