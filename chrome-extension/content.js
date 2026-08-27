@@ -1,6 +1,7 @@
 /**
  * Tab Walker - Content Script
  * Synchronously constructs Shadow DOM overlay with scrollable list & real-time search.
+ * Stays open until user presses Enter, clicks a tab, or presses Escape.
  */
 
 (function () {
@@ -199,7 +200,6 @@
   let filteredTabs = [];
   let selectedIndex = 0;
   let settings = {};
-  let autoSwitchTimer = null;
   let searchQuery = '';
 
   function getFaviconUrl(tab) {
@@ -298,20 +298,6 @@
     });
   }
 
-  function resetAutoSwitchTimer() {
-    if (autoSwitchTimer) {
-      clearTimeout(autoSwitchTimer);
-      autoSwitchTimer = null;
-    }
-    if (settings.autoSwitchingTimeout && settings.autoSwitchingTimeout > 0 && !searchQuery) {
-      autoSwitchTimer = setTimeout(() => {
-        if (isOpen && filteredTabs[selectedIndex]) {
-          switchTab(filteredTabs[selectedIndex]);
-        }
-      }, settings.autoSwitchingTimeout);
-    }
-  }
-
   function openPopup(initialIncrement = 1) {
     chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
       if (!model || !model.tabs) return;
@@ -344,8 +330,6 @@
       setTimeout(() => {
         searchInput.focus();
       }, 20);
-
-      resetAutoSwitchTimer();
     });
   }
 
@@ -354,22 +338,16 @@
     host.classList.remove('is-open');
     searchQuery = '';
     searchInput.value = '';
-    if (autoSwitchTimer) {
-      clearTimeout(autoSwitchTimer);
-      autoSwitchTimer = null;
-    }
   }
 
+  // Live search filtering
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.toLowerCase().trim();
     selectedIndex = 0;
     updateFilteredTabs();
-    if (autoSwitchTimer) {
-      clearTimeout(autoSwitchTimer);
-      autoSwitchTimer = null;
-    }
   });
 
+  // Keyboard navigation & selection
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
 
@@ -378,14 +356,12 @@
       if (filteredTabs.length > 0) {
         selectedIndex = (selectedIndex + 1) % filteredTabs.length;
         highlightSelectedTab();
-        resetAutoSwitchTimer();
       }
     } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
       e.preventDefault();
       if (filteredTabs.length > 0) {
         selectedIndex = (selectedIndex - 1 + filteredTabs.length) % filteredTabs.length;
         highlightSelectedTab();
-        resetAutoSwitchTimer();
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
@@ -398,14 +374,12 @@
     }
   }, true);
 
-  window.addEventListener('keyup', (e) => {
-    if (!isOpen) return;
-    if ((e.key === 'Alt' || e.key === 'AltGraph' || e.key === 'Meta' || e.key === 'Control') && !searchQuery) {
-      if (filteredTabs[selectedIndex]) {
-        switchTab(filteredTabs[selectedIndex]);
-      }
+  // Close when clicking outside card overlay
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closePopup();
     }
-  }, true);
+  });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || !message.type) return;
@@ -423,7 +397,6 @@
         if (filteredTabs.length > 0) {
           selectedIndex = (selectedIndex + increment + filteredTabs.length) % filteredTabs.length;
           highlightSelectedTab();
-          resetAutoSwitchTimer();
         }
       }
     } else if (message.type === MessageType.CLOSE_POPUP) {
