@@ -1,11 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
   <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="bgGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#F1F5F9" />
-    </linearGradient>
-
     <!-- Accent Gradient -->
     <linearGradient id="accentGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#6366F1" />
@@ -27,9 +21,6 @@
       <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.12" />
     </filter>
   </defs>
-
-  <!-- Base App Icon Container (Squircle) -->
-  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bgGradLight)" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" />
 
   <!-- Back Tab Card (Muted / Background Tab) -->
   <rect x="28" y="28" width="56" height="42" rx="10" fill="#E2E8F0" stroke="rgba(0,0,0,0.06)" stroke-width="1.5" opacity="0.85" />
