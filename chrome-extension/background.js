@@ -170,6 +170,12 @@ chrome.commands.onCommand.addListener(async (command) => {
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     isWindowFocused = false;
+    const activeTab = await getActiveTabInCurrentWindow();
+    if (activeTab && activeTab.id) {
+      try {
+        chrome.tabs.sendMessage(activeTab.id, { type: MessageType.CLOSE_POPUP });
+      } catch (e) {}
+    }
     return;
   }
   isWindowFocused = true;

@@ -17,9 +17,7 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*",
-        "file:///*"
+        "https://*/*"
       ],
       "js": [
         "content.js"
@@ -37,7 +35,7 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "<all_urls>"
+        "https://*/*"
       ],
       "resources": [
         "/_favicon/*"

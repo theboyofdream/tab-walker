@@ -1,6 +1,7 @@
 /**
  * Tab Walker - Content Script
  * Single command toggle for Tab Walker search overlay.
+ * Closes automatically if window loses focus.
  */
 
 (function () {
@@ -311,7 +312,6 @@
       searchInput.value = '';
       filteredTabs = allTabs.slice();
 
-      // Default to 2nd tab in MRU (previously active tab) if available
       selectedIndex = allTabs.length > 1 ? 1 : 0;
 
       host.classList.add('is-open');
@@ -369,6 +369,19 @@
   // Close when clicking outside card overlay
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
+      closePopup();
+    }
+  });
+
+  // Close popup automatically if window loses focus or document becomes hidden
+  window.addEventListener('blur', () => {
+    if (isOpen) {
+      closePopup();
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isOpen) {
       closePopup();
     }
   });
