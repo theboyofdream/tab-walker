@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tab Walker Settings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="settings-container">
+    <header class="header">
+      <h2>Tab Walker Settings</h2>
+    </header>
+
+    <form id="settings-form" class="settings-form">
+      <!-- Dark Mode -->
+      <div class="setting-row">
+        <label for="isDarkTheme" class="setting-label">
+          <span>Dark Theme</span>
+          <small>Use dark colors for the overlay card</small>
+        </label>
+        <input type="checkbox" id="isDarkTheme" class="toggle-switch">
+      </div>
+
+      <!-- Popup Width -->
+      <div class="setting-row">
+        <label for="popupWidth" class="setting-label">
+          <span>Popup Width (<span id="popupWidth-val">460</span>px)</span>
+        </label>
+        <input type="range" id="popupWidth" min="300" max="800" step="10" value="460">
+      </div>
+
+      <!-- Tab Height -->
+      <div class="setting-row">
+        <label for="tabHeight" class="setting-label">
+          <span>Tab Row Height (<span id="tabHeight-val">42</span>px)</span>
+        </label>
+        <input type="range" id="tabHeight" min="30" max="70" step="2" value="42">
+      </div>
+
+      <!-- Font Size -->
+      <div class="setting-row">
+        <label for="fontSize" class="setting-label">
+          <span>Font Size (<span id="fontSize-val">15</span>px)</span>
+        </label>
+        <input type="range" id="fontSize" min="12" max="22" step="1" value="15">
+      </div>
+
+      <!-- Icon Size -->
+      <div class="setting-row">
+        <label for="iconSize" class="setting-label">
+          <span>Icon Size (<span id="iconSize-val">20</span>px)</span>
+        </label>
+        <input type="range" id="iconSize" min="14" max="32" step="2" value="20">
+      </div>
+
+      <!-- Opacity -->
+      <div class="setting-row">
+        <label for="opacity" class="setting-label">
+          <span>Overlay Opacity (<span id="opacity-val">100</span>%)</span>
+        </label>
+        <input type="range" id="opacity" min="50" max="100" step="5" value="100">
+      </div>
+
+      <!-- Switch on close -->
+      <div class="setting-row">
+        <label for="isSwitchingToPreviouslyUsedTab" class="setting-label">
+          <span>Switch Tab on Close</span>
+          <small>Activate previously used tab when current tab closes</small>
+        </label>
+        <input type="checkbox" id="isSwitchingToPreviouslyUsedTab" class="toggle-switch" checked>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button type="button" id="reset-btn" class="btn btn-secondary">Reset Defaults</button>
+        <span id="save-status" class="save-status">Saved!</span>
+      </div>
+    </form>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

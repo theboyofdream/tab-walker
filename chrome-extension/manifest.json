@@ -12,7 +12,8 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Tab Walker"
+    "default_popup": "settings/index.html",
+    "default_title": "Tab Walker Settings"
   },
   "content_scripts": [
     {

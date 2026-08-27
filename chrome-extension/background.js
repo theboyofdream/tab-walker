@@ -9,7 +9,9 @@ const MessageType = {
   SWITCH_TAB: 'SWITCH_TAB',
   GET_MODEL: 'GET_MODEL',
   CLOSE_POPUP: 'CLOSE_POPUP',
-  TOGGLE_WALKER: 'TOGGLE_WALKER'
+  TOGGLE_WALKER: 'TOGGLE_WALKER',
+  GetSettings: 'GetSettings',
+  SetSettings: 'SetSettings'
 };
 
 const defaultSettings = {
@@ -18,7 +20,8 @@ const defaultSettings = {
   tabHeight: 42,
   fontSize: 15,
   iconSize: 20,
-  opacity: 100
+  opacity: 100,
+  isSwitchingToPreviouslyUsedTab: true
 };
 
 let mruTabs = [];
@@ -42,6 +45,18 @@ function isRestrictedUrl(url) {
   return /^(chrome|chrome-extension|view-source:|about:)/.test(url) ||
          url.startsWith('https://chrome.google.com/webstore') ||
          url.startsWith('https://chromewebstore.google.com');
+}
+
+async function getSettings() {
+  const data = await chrome.storage.local.get('settings');
+  return { ...defaultSettings, ...(data.settings || {}) };
+}
+
+async function updateSettings(newSettings) {
+  const current = await getSettings();
+  const updated = { ...current, ...newSettings };
+  await chrome.storage.local.set({ settings: updated });
+  return updated;
 }
 
 function saveTabOrder() {
@@ -203,6 +218,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   removeTab(tabId);
+  const settings = await getSettings();
+  if (settings.isSwitchingToPreviouslyUsedTab && mruTabs.length > 0) {
+    const nextToActivate = mruTabs[0];
+    if (nextToActivate) {
+      await activateTab(nextToActivate);
+    }
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -220,6 +242,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case MessageType.GET_MODEL: {
       (async () => {
         await registryReadyPromise;
+        const settings = await getSettings();
         let zoomFactor = 1;
         try {
           if (sender.tab && sender.tab.id) {
@@ -228,7 +251,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } catch (e) {}
         sendResponse({
           tabs: mruTabs.slice(),
-          settings: defaultSettings,
+          settings,
           zoomFactor
         });
       })();
@@ -239,6 +262,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         activateTab(message.selectedTab);
       }
       break;
+    }
+    case MessageType.GetSettings: {
+      (async () => {
+        const settings = await getSettings();
+        sendResponse(settings);
+      })();
+      return true;
+    }
+    case MessageType.SetSettings: {
+      (async () => {
+        const updated = await updateSettings(message.settings || {});
+        sendResponse(updated);
+      })();
+      return true;
     }
   }
 });
