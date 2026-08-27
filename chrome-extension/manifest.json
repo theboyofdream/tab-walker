@@ -31,11 +31,12 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*/*"
+        "<all_urls>"
       ],
       "js": [
         "content.js"
-      ]
+      ],
+      "run_at": "document_start"
     }
   ],
   "commands": {
@@ -49,7 +50,7 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "https://*/*"
+        "<all_urls>"
       ],
       "resources": [
         "/_favicon/*"
