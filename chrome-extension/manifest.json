@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Popup Tab Switcher",
+  "version": "1.0.0",
+  "description": "Makes switching between tabs more convenient with recent tab ordering, scrollable list, and instant search.",
+  "permissions": [
+    "activeTab",
+    "favicon",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "file:///*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Popup Tab Switcher"
+  },
+  "commands": {
+    "next": {
+      "description": "Open recent tabs list. Select next",
+      "suggested_key": {
+        "default": "Alt+Y"
+      }
+    },
+    "previous": {
+      "description": "Open recent tabs list. Select previous",
+      "suggested_key": {
+        "default": "Alt+Shift+Y"
+      }
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "/_favicon/*"
+      ]
+    }
+  ]
+}
