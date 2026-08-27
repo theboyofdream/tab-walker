@@ -1,7 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Settings Script
  * Synchronizes options UI with browser.storage.local.
- * Implements Stepped Capsule Slider and Craft Toggle Switch controls with dual theme support.
+ * Implements Stepped Capsule Slider and Craft Toggle Switch controls with dual theme and custom CSS support.
  */
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
@@ -15,6 +15,7 @@ const defaultSettings = {
   iconSize: 20,
   opacity: 100,
   isSwitchingToPreviouslyUsedTab: true,
+  customCss: '',
   position: null
 };
 
@@ -26,7 +27,8 @@ const fields = [
   'fontSize',
   'iconSize',
   'opacity',
-  'isSwitchingToPreviouslyUsedTab'
+  'isSwitchingToPreviouslyUsedTab',
+  'customCss'
 ];
 
 const sliderIds = ['popupWidth', 'windowHeight', 'tabHeight', 'fontSize', 'iconSize', 'opacity'];
@@ -124,7 +126,7 @@ async function loadSettings() {
       el.checked = !!current[field];
       updateToggleAria(field, el.checked);
     } else {
-      el.value = current[field];
+      el.value = current[field] || '';
     }
   });
 
@@ -140,8 +142,12 @@ async function saveSettings() {
     if (el.type === 'checkbox') {
       settings[field] = el.checked;
       updateToggleAria(field, el.checked);
-    } else {
+    } else if (el.type === 'textarea') {
+      settings[field] = el.value;
+    } else if (sliderIds.includes(field)) {
       settings[field] = Number(el.value);
+    } else {
+      settings[field] = el.value;
     }
   });
 

@@ -27,6 +27,7 @@ const defaultSettings = {
   iconSize: 20,
   opacity: 100,
   isSwitchingToPreviouslyUsedTab: true,
+  customCss: '',
   position: null
 };
 

@@ -1,7 +1,7 @@
 /**
  * Tab Walker - Content Script
  * Single command toggle for Tab Walker search overlay.
- * High-craft, dual-theme Command Palette UI inspired by Raycast & Linear.
+ * Centralized themeable CSS tokens with user CSS override layer.
  * Closes automatically if window loses focus.
  * Performs browser web search on Enter when no tabs match.
  * Draggable overlay card with viewport center-relative position memory.
@@ -29,9 +29,10 @@
   host.id = 'tab-walker-host';
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Attach CSS styles synchronously inside Shadow DOM
-  const style = document.createElement('style');
-  style.textContent = `
+  // Attach Built-in Theme Stylesheet synchronously inside Shadow DOM
+  const themeStyle = document.createElement('style');
+  themeStyle.id = 'tw-theme-style';
+  themeStyle.textContent = `
     :host {
       all: initial !important;
       position: fixed !important;
@@ -42,6 +43,41 @@
       z-index: 2147483647 !important;
       pointer-events: none !important;
       display: block !important;
+
+      /* Global Theme Tokens - Typography */
+      --tw-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+      --tw-font-size-base: 15px;
+      --tw-font-size-search: 14px;
+      --tw-font-size-badge: 11.5px;
+      --tw-font-weight-normal: 400;
+      --tw-font-weight-medium: 500;
+      --tw-letter-spacing: -0.01em;
+
+      /* Global Theme Tokens - Spacing */
+      --tw-padding-card: 12px 12px 10px 12px;
+      --tw-padding-tab: 0 16px;
+      --tw-padding-search: 0 12px 0 34px;
+      --tw-margin-search: 0 0 8px 0;
+      --tw-gap-tabs: 2px;
+      --tw-padding-tabs-list: 2px 0;
+
+      /* Global Theme Tokens - Radius */
+      --tw-radius-card: 14px;
+      --tw-radius-search: 8px;
+      --tw-radius-tab: 8px;
+      --tw-radius-badge: 4px;
+      --tw-radius-icon: 3px;
+      --tw-radius-scrollbar: 2px;
+
+      /* Global Theme Tokens - Sizing */
+      --tw-width-card: 460px;
+      --tw-max-height-card: 500px;
+      --tw-height-search: 38px;
+      --tw-height-tab: 42px;
+      --tw-size-icon: 20px;
+      --tw-size-search-icon: 14px;
+      --tw-width-scrollbar: 4px;
+      --tw-opacity-overlay: 1;
     }
     :host(.is-open) {
       pointer-events: auto !important;
@@ -49,7 +85,7 @@
     * {
       box-sizing: border-box;
     }
-    .overlay {
+    .tw-overlay {
       box-sizing: border-box;
       display: none;
       align-items: flex-start;
@@ -57,165 +93,170 @@
       padding-top: 18vh;
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
-      letter-spacing: -0.01em;
+      font-family: var(--tw-font-family);
+      letter-spacing: var(--tw-letter-spacing);
       background: rgba(0, 0, 0, 0.4);
-      opacity: var(--popup-opacity, 1);
+      opacity: var(--tw-opacity-overlay);
     }
-    :host(.is-open) .overlay {
+    :host(.is-open) .tw-overlay {
       display: flex !important;
     }
-    .card {
-      --card-bg: #FFFFFF;
-      --card-border: rgba(0, 0, 0, 0.08);
-      --card-color: #334155;
-      --shadow-modal: 0 20px 40px -12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-      --search-bg: #F1F3F5;
-      --search-color: #0F172A;
-      --search-placeholder: #94A3B8;
-      --search-border: rgba(0, 0, 0, 0.06);
-      --search-focus-border: rgba(79, 86, 233, 0.4);
-      --search-focus-glow: 0 0 0 2px rgba(79, 86, 233, 0.12);
-      --search-icon-color: #94A3B8;
-      --tab-selected-bg: #F1F3F9;
-      --tab-selected-border: rgba(0, 0, 0, 0.04);
-      --tab-selected-color: #0F172A;
-      --tab-hover-bg: #F8FAFC;
-      --text-secondary: #94A3B8;
-      --badge-bg: rgba(0, 0, 0, 0.04);
-      --badge-color: #64748B;
-      --badge-border: rgba(0, 0, 0, 0.06);
-      --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
-      background: var(--card-bg);
-      border-radius: 14px;
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow-modal);
-      color: var(--card-color);
-      width: var(--popup-width, 460px);
+    /* Light Theme (Default) Tokens */
+    .tw-card {
+      --tw-bg-card: #FFFFFF;
+      --tw-border-card: rgba(0, 0, 0, 0.08);
+      --tw-color-card: #334155;
+      --tw-shadow-card: 0 20px 40px -12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --tw-bg-search: #F1F3F5;
+      --tw-color-search: #0F172A;
+      --tw-placeholder-search: #94A3B8;
+      --tw-border-search: rgba(0, 0, 0, 0.06);
+      --tw-border-search-focus: rgba(79, 86, 233, 0.4);
+      --tw-glow-search-focus: 0 0 0 2px rgba(79, 86, 233, 0.12);
+      --tw-icon-search: #94A3B8;
+      --tw-bg-tab-selected: #F1F3F9;
+      --tw-border-tab-selected: rgba(0, 0, 0, 0.04);
+      --tw-color-tab-selected: #0F172A;
+      --tw-bg-tab-hover: #F8FAFC;
+      --tw-color-text-secondary: #94A3B8;
+      --tw-bg-badge: rgba(0, 0, 0, 0.04);
+      --tw-color-badge: #64748B;
+      --tw-border-badge: rgba(0, 0, 0, 0.06);
+      --tw-thumb-scrollbar: rgba(0, 0, 0, 0.15);
+
+      background: var(--tw-bg-card);
+      border-radius: var(--tw-radius-card);
+      border: 1px solid var(--tw-border-card);
+      box-shadow: var(--tw-shadow-card);
+      color: var(--tw-color-card);
+      width: var(--tw-width-card);
       max-width: 90vw;
-      max-height: var(--popup-height, 500px);
-      padding: 12px 12px 10px 12px;
+      max-height: var(--tw-max-height-card);
+      padding: var(--tw-padding-card);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       transition: background-color 0.2s ease, border-color 0.2s ease;
     }
-    .card.card_dark {
-      --card-bg: #111215;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-color: #C4C7D0;
-      --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      --search-bg: rgba(255, 255, 255, 0.04);
-      --search-color: #FFFFFF;
-      --search-placeholder: #5C606E;
-      --search-border: rgba(255, 255, 255, 0.06);
-      --search-focus-border: rgba(79, 86, 233, 0.5);
-      --search-focus-glow: 0 0 0 2px rgba(79, 86, 233, 0.15);
-      --search-icon-color: #5C606E;
-      --tab-selected-bg: rgba(255, 255, 255, 0.06);
-      --tab-selected-border: rgba(255, 255, 255, 0.05);
-      --tab-selected-color: #FFFFFF;
-      --tab-hover-bg: rgba(255, 255, 255, 0.03);
-      --text-secondary: #5C606E;
-      --badge-bg: rgba(255, 255, 255, 0.06);
-      --badge-color: #8C909F;
-      --badge-border: rgba(255, 255, 255, 0.08);
-      --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+
+    /* Dark Theme Tokens */
+    .tw-card.tw-card--dark {
+      --tw-bg-card: #111215;
+      --tw-border-card: rgba(255, 255, 255, 0.08);
+      --tw-color-card: #C4C7D0;
+      --tw-shadow-card: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      --tw-bg-search: rgba(255, 255, 255, 0.04);
+      --tw-color-search: #FFFFFF;
+      --tw-placeholder-search: #5C606E;
+      --tw-border-search: rgba(255, 255, 255, 0.06);
+      --tw-border-search-focus: rgba(79, 86, 233, 0.5);
+      --tw-glow-search-focus: 0 0 0 2px rgba(79, 86, 233, 0.15);
+      --tw-icon-search: #5C606E;
+      --tw-bg-tab-selected: rgba(255, 255, 255, 0.06);
+      --tw-border-tab-selected: rgba(255, 255, 255, 0.05);
+      --tw-color-tab-selected: #FFFFFF;
+      --tw-bg-tab-hover: rgba(255, 255, 255, 0.03);
+      --tw-color-text-secondary: #5C606E;
+      --tw-bg-badge: rgba(255, 255, 255, 0.06);
+      --tw-color-badge: #8C909F;
+      --tw-border-badge: rgba(255, 255, 255, 0.08);
+      --tw-thumb-scrollbar: rgba(255, 255, 255, 0.15);
     }
-    .search-container {
+
+    .tw-search-container {
       position: relative;
       flex-shrink: 0;
       width: 100%;
-      margin-bottom: 8px;
+      margin: var(--tw-margin-search);
       cursor: grab;
     }
-    .search-icon {
+    .tw-search-icon {
       position: absolute;
       left: 12px;
       top: 50%;
       transform: translateY(-50%);
-      width: 14px;
-      height: 14px;
-      fill: var(--search-icon-color);
+      width: var(--tw-size-search-icon);
+      height: var(--tw-size-search-icon);
+      fill: var(--tw-icon-search);
       pointer-events: none;
       transition: fill 0.15s ease;
     }
-    .search-input {
+    .tw-search-input {
       width: 100%;
-      height: 38px;
-      padding: 0 12px 0 34px;
-      font-size: 14px;
+      height: var(--tw-height-search);
+      padding: var(--tw-padding-search);
+      font-size: var(--tw-font-size-search);
       font-family: inherit;
-      border: 1px solid var(--search-border);
-      border-radius: 8px;
-      background: var(--search-bg);
-      color: var(--search-color);
+      border: 1px solid var(--tw-border-search);
+      border-radius: var(--tw-radius-search);
+      background: var(--tw-bg-search);
+      color: var(--tw-color-search);
       outline: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
       cursor: text;
     }
-    .search-input::placeholder {
-      color: var(--search-placeholder);
+    .tw-search-input::placeholder {
+      color: var(--tw-placeholder-search);
     }
-    .search-input:focus {
-      border-color: var(--search-focus-border);
-      box-shadow: var(--search-focus-glow);
+    .tw-search-input:focus {
+      border-color: var(--tw-border-search-focus);
+      box-shadow: var(--tw-glow-search-focus);
     }
-    .tabs-list {
+    .tw-tabs-list {
       flex: 1 1 auto;
       overflow-y: auto;
       overflow-x: hidden;
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      padding: 2px 0;
+      gap: var(--tw-gap-tabs);
+      padding: var(--tw-padding-tabs-list);
       margin: 0;
       scroll-behavior: smooth;
     }
-    .tabs-list::-webkit-scrollbar {
-      width: 4px;
+    .tw-tabs-list::-webkit-scrollbar {
+      width: var(--tw-width-scrollbar);
     }
-    .tabs-list::-webkit-scrollbar-track {
+    .tw-tabs-list::-webkit-scrollbar-track {
       background: transparent;
     }
-    .tabs-list::-webkit-scrollbar-thumb {
-      background: var(--scrollbar-thumb);
-      border-radius: 2px;
+    .tw-tabs-list::-webkit-scrollbar-thumb {
+      background: var(--tw-thumb-scrollbar);
+      border-radius: var(--tw-radius-scrollbar);
     }
-    .tab {
+    .tw-tab {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: var(--tab-height, 42px);
-      min-height: var(--tab-height, 42px);
+      height: var(--tw-height-tab);
+      min-height: var(--tw-height-tab);
       flex-shrink: 0;
-      padding: 0 16px;
-      border-radius: 8px;
+      padding: var(--tw-padding-tab);
+      border-radius: var(--tw-radius-tab);
       cursor: pointer;
       user-select: none;
       border: 1px solid transparent;
       transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
     }
-    .tab:hover {
-      background-color: var(--tab-hover-bg);
+    .tw-tab:hover {
+      background-color: var(--tw-bg-tab-hover);
     }
-    .tab.tab_selected {
-      background-color: var(--tab-selected-bg);
-      border-color: var(--tab-selected-border);
-      color: var(--tab-selected-color);
+    .tw-tab.tw-tab--selected {
+      background-color: var(--tw-bg-tab-selected);
+      border-color: var(--tw-border-tab-selected);
+      color: var(--tw-color-tab-selected);
     }
-    .tab__info {
+    .tw-tab__info {
       display: flex;
       align-items: center;
       min-width: 0;
       flex: 1;
       margin-right: 12px;
     }
-    .tab__icon-wrapper {
-      width: var(--icon-size, 20px);
-      height: var(--icon-size, 20px);
-      border-radius: 3px;
+    .tw-tab__icon-wrapper {
+      width: var(--tw-size-icon);
+      height: var(--tw-size-icon);
+      border-radius: var(--tw-radius-icon);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -223,58 +264,63 @@
       margin-right: 12px;
       overflow: hidden;
     }
-    .tab__icon {
+    .tw-tab__icon {
       width: 100%;
       height: 100%;
       object-fit: contain;
     }
-    .tab__text {
+    .tw-tab__text {
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: var(--font-size, 15px);
-      font-weight: 500;
+      font-size: var(--tw-font-size-base);
+      font-weight: var(--tw-font-weight-medium);
       color: inherit;
     }
-    .tab__badge {
-      font-size: 11.5px;
+    .tw-tab__badge {
+      font-size: var(--tw-font-size-badge);
       font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
       font-variant-numeric: tabular-nums;
       padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--badge-bg);
-      color: var(--badge-color);
-      border: 1px solid var(--badge-border);
+      border-radius: var(--tw-radius-badge);
+      background: var(--tw-bg-badge);
+      color: var(--tw-color-badge);
+      border: 1px solid var(--tw-border-badge);
       flex-shrink: 0;
       opacity: 0;
       transition: opacity 0.1s ease;
     }
-    .tab.tab_selected .tab__badge,
-    .tab:hover .tab__badge {
+    .tw-tab.tw-tab--selected .tw-tab__badge,
+    .tw-tab:hover .tw-tab__badge {
       opacity: 1;
     }
-    .no-results {
+    .tw-no-results {
       padding: 24px 16px;
       text-align: center;
-      color: var(--text-secondary);
+      color: var(--tw-color-text-secondary);
       font-size: 14px;
       line-height: 1.5;
     }
   `;
 
-  // Synchronous DOM construction
+  // Attach User CSS Layer stylesheet inside Shadow DOM (loads AFTER built-in stylesheet)
+  const userStyle = document.createElement('style');
+  userStyle.id = 'tw-user-style';
+  userStyle.textContent = '';
+
+  // Synchronous DOM construction with stable semantic class names
   const overlay = document.createElement('div');
-  overlay.className = 'overlay';
+  overlay.className = 'tw-overlay';
 
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'tw-card';
 
   const searchContainer = document.createElement('div');
-  searchContainer.className = 'search-container';
+  searchContainer.className = 'tw-search-container';
 
   const searchIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  searchIconSvg.setAttribute('class', 'search-icon');
+  searchIconSvg.setAttribute('class', 'tw-search-icon');
   searchIconSvg.setAttribute('viewBox', '0 0 24 24');
   searchIconSvg.setAttribute('width', '14');
   searchIconSvg.setAttribute('height', '14');
@@ -285,20 +331,21 @@
 
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
-  searchInput.className = 'search-input';
+  searchInput.className = 'tw-search-input';
   searchInput.placeholder = 'Search open tabs...';
 
   searchContainer.appendChild(searchIconSvg);
   searchContainer.appendChild(searchInput);
 
   const tabsList = document.createElement('div');
-  tabsList.className = 'tabs-list';
+  tabsList.className = 'tw-tabs-list';
 
   card.appendChild(searchContainer);
   card.appendChild(tabsList);
   overlay.appendChild(card);
 
-  shadow.appendChild(style);
+  shadow.appendChild(themeStyle);
+  shadow.appendChild(userStyle);
   shadow.appendChild(overlay);
 
   function attachHost() {
@@ -463,7 +510,7 @@
 
     if (filteredTabs.length === 0) {
       const noResults = document.createElement('div');
-      noResults.className = 'no-results';
+      noResults.className = 'tw-no-results';
       if (searchQuery) {
         noResults.textContent = `No matching tabs. Press Enter to search web for "${searchQuery}"`;
       } else {
@@ -475,30 +522,30 @@
 
     filteredTabs.forEach((tab, index) => {
       const tabEl = document.createElement('div');
-      tabEl.className = 'tab' + (index === selectedIndex ? ' tab_selected' : '');
+      tabEl.className = 'tw-tab' + (index === selectedIndex ? ' tw-tab--selected' : '');
 
       const infoEl = document.createElement('div');
-      infoEl.className = 'tab__info';
+      infoEl.className = 'tw-tab__info';
 
       const iconWrapper = document.createElement('div');
-      iconWrapper.className = 'tab__icon-wrapper';
+      iconWrapper.className = 'tw-tab__icon-wrapper';
 
       const img = document.createElement('img');
-      img.className = 'tab__icon';
+      img.className = 'tw-tab__icon';
       img.src = getFaviconUrl(tab);
       img.onerror = () => { img.src = fallbackFaviconSvg; };
 
       iconWrapper.appendChild(img);
 
       const textEl = document.createElement('span');
-      textEl.className = 'tab__text';
+      textEl.className = 'tw-tab__text';
       textEl.textContent = tab.title || tab.url || 'Untitled Tab';
 
       infoEl.appendChild(iconWrapper);
       infoEl.appendChild(textEl);
 
       const badgeEl = document.createElement('span');
-      badgeEl.className = 'tab__badge';
+      badgeEl.className = 'tw-tab__badge';
       badgeEl.textContent = '↵ Jump';
 
       tabEl.appendChild(infoEl);
@@ -524,10 +571,10 @@
     const children = tabsList.children;
     for (let i = 0; i < children.length; i++) {
       if (i === selectedIndex) {
-        children[i].classList.add('tab_selected');
+        children[i].classList.add('tw-tab--selected');
         children[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else {
-        children[i].classList.remove('tab_selected');
+        children[i].classList.remove('tw-tab--selected');
       }
     }
   }
@@ -548,18 +595,21 @@
       allTabs = model.tabs || [];
       settings = model.settings || {};
 
-      card.className = 'card' + (settings.isDarkTheme ? ' card_dark' : '');
-      host.style.setProperty('--popup-opacity', (settings.opacity || 100) / 100);
-      host.style.setProperty('--popup-width', `${settings.popupWidth || 460}px`);
-      host.style.setProperty('--popup-height', `${settings.windowHeight || 500}px`);
+      card.className = 'tw-card' + (settings.isDarkTheme ? ' tw-card--dark' : ' tw-card--light');
+      host.style.setProperty('--tw-opacity-overlay', (settings.opacity || 100) / 100);
+      host.style.setProperty('--tw-width-card', `${settings.popupWidth || 460}px`);
+      host.style.setProperty('--tw-max-height-card', `${settings.windowHeight || 500}px`);
 
-      host.style.setProperty('--tab-height', `${settings.tabHeight || 42}px`);
+      host.style.setProperty('--tw-height-tab', `${settings.tabHeight || 42}px`);
       if (settings.fontSize) {
-        host.style.setProperty('--font-size', `${settings.fontSize}px`);
+        host.style.setProperty('--tw-font-size-base', `${settings.fontSize}px`);
       }
       if (settings.iconSize) {
-        host.style.setProperty('--icon-size', `${settings.iconSize}px`);
+        host.style.setProperty('--tw-size-icon', `${settings.iconSize}px`);
       }
+
+      // User CSS Override Layer
+      userStyle.textContent = settings.customCss || '';
 
       searchQuery = '';
       searchInput.value = '';
