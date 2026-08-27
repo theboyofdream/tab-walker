@@ -1,7 +1,7 @@
 /**
  * Tab Walker - Firefox Extension Settings Script
  * Synchronizes options UI with browser.storage.local.
- * Implements Stepped Capsule Slider controls with tick marks and micro-interactions.
+ * Implements Stepped Capsule Slider and Craft Toggle Switch controls with accessibility attributes.
  */
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
@@ -28,6 +28,7 @@ const fields = [
 ];
 
 const sliderIds = ['popupWidth', 'windowHeight', 'fontSize', 'iconSize', 'opacity'];
+const toggleIds = ['isDarkTheme', 'isSwitchingToPreviouslyUsedTab'];
 
 const form = document.getElementById('settings-form');
 const resetBtn = document.getElementById('reset-btn');
@@ -38,6 +39,13 @@ function applyTheme(isDark) {
     document.body.classList.add('dark-theme');
   } else {
     document.body.classList.remove('dark-theme');
+  }
+}
+
+function updateToggleAria(toggleId, isChecked) {
+  const el = document.getElementById(toggleId);
+  if (el) {
+    el.setAttribute('aria-checked', isChecked ? 'true' : 'false');
   }
 }
 
@@ -74,7 +82,6 @@ function updateCapsuleThumb(sliderId, value) {
   const max = Number(input.max);
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-  // Thumb width = 8px, left inset = 4px, right inset = 4px
   thumb.style.left = `calc(4px + ${pct * 100}% - ${pct * 16}px)`;
 
   if (badge) {
@@ -106,6 +113,7 @@ async function loadSettings() {
     if (!el) return;
     if (el.type === 'checkbox') {
       el.checked = !!current[field];
+      updateToggleAria(field, el.checked);
     } else {
       el.value = current[field];
     }
@@ -122,6 +130,7 @@ async function saveSettings() {
     if (!el) return;
     if (el.type === 'checkbox') {
       settings[field] = el.checked;
+      updateToggleAria(field, el.checked);
     } else {
       settings[field] = Number(el.value);
     }
@@ -145,9 +154,27 @@ sliderIds.forEach(id => {
   }
 });
 
+toggleIds.forEach(id => {
+  const input = document.getElementById(id);
+  if (input) {
+    input.addEventListener('change', () => {
+      updateToggleAria(id, input.checked);
+      saveSettings();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        input.checked = !input.checked;
+        updateToggleAria(id, input.checked);
+        saveSettings();
+      }
+    });
+  }
+});
+
 fields.forEach(field => {
   const el = document.getElementById(field);
-  if (el && !sliderIds.includes(field)) {
+  if (el && !sliderIds.includes(field) && !toggleIds.includes(field)) {
     el.addEventListener('input', saveSettings);
     el.addEventListener('change', saveSettings);
   }

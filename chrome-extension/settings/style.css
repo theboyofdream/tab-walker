@@ -4,6 +4,7 @@
 
 :root {
   --setting-label-color: #3c4043;
+  --setting-small-color: #5f6368;
   --badge-bg: rgba(0, 0, 0, 0.06);
   --badge-color: #5f6368;
   --track-bg: #e4e7ea;
@@ -11,6 +12,11 @@
   --tick-bg: rgba(0, 0, 0, 0.18);
   --thumb-bg: #1a73e8;
   --thumb-active-bg: #1557b0;
+
+  --toggle-track-bg: #e4e7ea;
+  --toggle-track-border: rgba(0, 0, 0, 0.15);
+  --toggle-active-bg: #1a73e8;
+  --toggle-glow: rgba(26, 115, 232, 0.35);
 }
 
 body {
@@ -57,23 +63,89 @@ body {
 .setting-label {
   display: flex;
   flex-direction: column;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--setting-label-color);
   flex: 1;
+  cursor: pointer;
 }
 
 .setting-label small {
-  font-size: 11px;
-  color: #5f6368;
+  font-size: 11.5px;
+  color: var(--setting-small-color);
   font-weight: normal;
   margin-top: 2px;
 }
 
-input[type="checkbox"].toggle-switch {
-  width: 18px;
-  height: 18px;
+/* Craft Toggle Switch Component */
+.craft-toggle-wrapper {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.craft-toggle-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
-  accent-color: #1a73e8;
+  margin: 0;
+  z-index: 3;
+}
+
+.craft-toggle-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  background: var(--toggle-track-bg);
+  border: 1px solid var(--toggle-track-border);
+  box-sizing: border-box;
+  pointer-events: none;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.craft-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  pointer-events: none;
+}
+
+.craft-toggle-input:checked ~ .craft-toggle-track {
+  background: var(--toggle-active-bg);
+  border-color: var(--toggle-active-bg);
+  box-shadow: 0 0 10px var(--toggle-glow);
+}
+
+.craft-toggle-input:checked ~ .craft-toggle-track .craft-toggle-thumb {
+  transform: translateX(16px);
+}
+
+/* Tactile Feel / Active Click Stretch */
+.craft-toggle-input:active ~ .craft-toggle-track .craft-toggle-thumb {
+  transform: scaleX(1.15);
+}
+
+.craft-toggle-input:checked:active ~ .craft-toggle-track .craft-toggle-thumb {
+  transform: translateX(16px) scaleX(1.15);
+}
+
+.craft-toggle-input:focus-visible ~ .craft-toggle-track {
+  outline: 2px solid #448aff;
+  outline-offset: 2px;
 }
 
 /* Stepped Capsule Slider Styling */
@@ -225,7 +297,8 @@ input[type="checkbox"].toggle-switch {
 
 /* Dark Theme Styles for Settings Page */
 body.dark-theme {
-  --setting-label-color: #C4C7D0;
+  --setting-label-color: #E2E8F0;
+  --setting-small-color: #64748B;
   --badge-bg: rgba(255, 255, 255, 0.06);
   --badge-color: #8C909C;
   --track-bg: #18191E;
@@ -233,6 +306,11 @@ body.dark-theme {
   --tick-bg: rgba(255, 255, 255, 0.12);
   --thumb-bg: #F1F3F5;
   --thumb-active-bg: #ffffff;
+
+  --toggle-track-bg: #1A1B20;
+  --toggle-track-border: rgba(255, 255, 255, 0.08);
+  --toggle-active-bg: #448aff;
+  --toggle-glow: rgba(68, 138, 255, 0.35);
 
   background-color: #252629;
   color: #e9ebec;
@@ -244,10 +322,6 @@ body.dark-theme .header {
 
 body.dark-theme .header h2 {
   color: #8ab4f8;
-}
-
-body.dark-theme .setting-label small {
-  color: #9aa0a6;
 }
 
 body.dark-theme .actions {

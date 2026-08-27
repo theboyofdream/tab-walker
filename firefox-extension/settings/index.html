@@ -18,7 +18,12 @@
           <span>Dark Theme</span>
           <small>Use dark colors for the overlay card</small>
         </label>
-        <input type="checkbox" id="isDarkTheme" class="toggle-switch">
+        <div class="craft-toggle-wrapper">
+          <input type="checkbox" id="isDarkTheme" class="craft-toggle-input" role="switch" aria-checked="false">
+          <div class="craft-toggle-track">
+            <div class="craft-toggle-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Popup Width -->
@@ -102,7 +107,12 @@
           <span>Switch Tab on Close</span>
           <small>Activate previously used tab when current tab closes</small>
         </label>
-        <input type="checkbox" id="isSwitchingToPreviouslyUsedTab" class="toggle-switch" checked>
+        <div class="craft-toggle-wrapper">
+          <input type="checkbox" id="isSwitchingToPreviouslyUsedTab" class="craft-toggle-input" role="switch" aria-checked="true" checked>
+          <div class="craft-toggle-track">
+            <div class="craft-toggle-thumb"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Actions -->
