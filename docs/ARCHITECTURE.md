@@ -1,95 +1,88 @@
-# Tab Walker — System Architecture
+# Architecture
 
-Tab Walker is structured as a decoupled browser extension consisting of three primary execution contexts: Background Service Worker (`background.js`), In-Page Content Script (`content.js`), and Options Settings Popup (`settings/index.html`, `index.js`).
+Tab Walker consists of three main components: a background script, an in-page content script, and an options popup page.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            Browser Environment                              │
 │                                                                             │
 │  ┌──────────────────────────────┐        ┌──────────────────────────────┐  │
-│  │   Background Worker          │        │    Content Script            │  │
+│  │   Background Script          │        │    Content Script            │  │
 │  │   (background.js)            │        │    (content.js)              │  │
 │  │                              │        │                              │  │
-│  │  - MRU Tab Registry Array    │        │  - Host Element & Shadow DOM │  │
-│  │  - Window & Tab Listeners    │        │  - Draggable Overlay Card    │  │
-│  │  - History/Bookmarks Search  │◄──────►│  - Instant Local Tab Search  │  │
-│  │  - Storage Sync              │Message │  - Debounced Async Query     │  │
-│  │  - Scripting Auto-Inject     │Protocol│  - Keyboard Navigation       │  │
+│  │  - MRU tab array             │        │  - Shadow DOM overlay        │  │
+│  │  - Window & tab listeners    │◄──────►│  - Instant tab search        │  │
+│  │  - History/bookmark search   │Message │  - Debounced history search  │  │
+│  │  - Storage synchronization   │Protocol│  - Key navigation & drag     │  │
 │  └──────────────┬───────────────┘        └──────────────────────────────┘  │
 │                 │                                                           │
 │                 │ storage.local                                             │
 │                 ▼                                                           │
 │  ┌──────────────────────────────┐                                           │
-│  │   Settings Popup UI          │                                           │
+│  │   Settings Popup             │                                           │
 │  │   (settings/index.js)        │                                           │
 │  │                              │                                           │
-│  │  - Capsule Dimension Sliders │                                           │
-│  │  - Theme Toggle Switches     │                                           │
-│  │  - Custom CSS Override Area  │                                           │
+│  │  - Settings sliders          │                                           │
+│  │  - Theme & MRU toggles       │                                           │
+│  │  - Custom CSS input          │                                           │
 │  └──────────────────────────────┘                                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Component Breakdown
+## Components
 
-### 1. Background Service Worker (`background.js`)
+### 1. Background Script (`background.js`)
 
-The background service worker acts as the central state manager and browser API gateway.
+Manages extension state and calls browser extension APIs.
 
-- **MRU Tab Registry**: Maintains an in-memory array (`mruTabs`) sorted by Most Recently Used order across all open windows. Tab order is persisted to `chrome.storage.local.get('tabs')`.
+- **MRU Tab List**: Maintains an in-memory array (`mruTabs`) sorted by most recently used tab order across windows. Persists tab IDs to `chrome.storage.local`.
 - **Event Listeners**:
-  - `chrome.windows.onFocusChanged`: Updates tab active state when switching windows. Sends `CLOSE_POPUP` message when focus is lost.
-  - `chrome.tabs.onActivated`: Updates active tab index in MRU list.
-  - `chrome.tabs.onCreated`, `chrome.tabs.onUpdated`, `chrome.tabs.onRemoved`: Synchronizes registry when tabs open, load, or close. If `isSwitchingToPreviouslyUsedTab` is enabled, closing the active tab activates the top MRU tab.
-  - `chrome.commands.onCommand`: Listens for `toggle-walker` (`Alt+Y`). Sends `TOGGLE_WALKER` message to the active tab.
-- **Scripting Auto-Injection**: If sending `TOGGLE_WALKER` fails (e.g. tab was loaded before extension update), background script uses `chrome.scripting.executeScript` to dynamically inject `content.js` into the active tab on demand.
-- **API Proxy**: Executes `chrome.history.search` and `chrome.bookmarks.search` asynchronously upon receiving `SEARCH_OMNIBOX` message and returns sanitized results.
+  - `chrome.windows.onFocusChanged`: Updates active tab state when switching windows. Sends `CLOSE_POPUP` when window focus is lost.
+  - `chrome.tabs.onActivated`: Updates active tab order in the MRU array.
+  - `chrome.tabs.onCreated`, `chrome.tabs.onUpdated`, `chrome.tabs.onRemoved`: Keeps the MRU list in sync as tabs open, update, or close. If `isSwitchingToPreviouslyUsedTab` is enabled, closing the active tab switches to the previous MRU tab.
+  - `chrome.commands.onCommand`: Listens for `toggle-walker` (`Alt+Y`) and sends `TOGGLE_WALKER` to the active tab.
+- **Script Injection**: If sending `TOGGLE_WALKER` fails, attempts to inject `content.js` dynamically via `chrome.scripting.executeScript`.
+- **History & Bookmark Search**: Responds to `SEARCH_OMNIBOX` messages by calling `chrome.history.search` and `chrome.bookmarks.search`.
 
-### 2. In-Page Content Script (`content.js`)
+### 2. Content Script (`content.js`)
 
-The content script renders the interactive overlay UI inside target web pages.
+Renders and handles the overlay UI inside web pages.
 
-- **Shadow DOM Encapsulation**: Creates `#tab-walker-host` and attaches an open Shadow DOM root. All UI elements, built-in CSS tokens, and user CSS overrides exist strictly within the shadow root to prevent page style contamination.
-- **Draggable Card with Position Memory**: The overlay card is draggable via the search input container header. Card movement calculates center-relative viewport offsets (`offsetX`, `offsetY`) and saves them via `SAVE_POSITION` to settings.
-- **Interactive Search Engine**:
-  - **Local Scoring**: Filters `allTabs` immediately (0ms latency).
-  - **Async Enrichment**: Sends debounced `SEARCH_OMNIBOX` message (80ms delay) to background worker for history & bookmarks. Uses sequence tracking (`currentSearchSeq`) to discard outdated responses.
-- **Event Dispatching**:
-  - `Escape`: Progressive clear search query if text exists, or close overlay if input is empty.
-  - Backdrop Click: Clicking on `.tw-overlay` outside `.tw-card` closes the overlay.
-  - Window Blur / Visibility Change: Automatically hides overlay when switching windows or hiding tab document.
+- **Shadow DOM**: Creates `#tab-walker-host` and attaches a Shadow DOM root. Styles, DOM structure, and custom user CSS reside inside the shadow root to prevent page CSS interference.
+- **Draggable Card**: Dragging the search container header moves the card. Saves viewport-relative offsets (`offsetX`, `offsetY`) to settings via `SAVE_POSITION`.
+- **Search & Scoring**: Filters open tabs locally on input. Sends a debounced `SEARCH_OMNIBOX` message (80ms) to request history and bookmark matches from the background script.
+- **Event Handling**:
+  - `Escape`: Clears text if input is non-empty; closes overlay if input is empty.
+  - `blur` on search input: Catches focus loss and triggers text clear or close behavior.
+  - Overlay click: Clicking outside the card closes the overlay.
+  - `visibilitychange`: Hides overlay when document tab becomes hidden.
 
-### 3. Settings Options UI (`settings/`)
+### 3. Settings Popup (`settings/`)
 
-The options page is loaded via `action.default_popup`.
+Loaded from the extension toolbar action popup.
 
-- **Settings Storage**: Loads and saves settings directly from `chrome.storage.local.get('settings')`.
-- **Interactive Controls**:
-  - Stepped Capsule Sliders (`popupWidth`, `windowHeight`, `tabHeight`, `fontSize`, `iconSize`, `opacity`).
-  - Craft Toggle Switches (`isDarkTheme`, `isSwitchingToPreviouslyUsedTab`).
-  - Custom CSS Textarea (`customCss`).
-- **Dynamic Icon Updates**: Updating `isDarkTheme` automatically calls `updateActionIcon()` in background worker to switch toolbar icon paths between light and dark variants (`icon16.png` vs `icon-light16.png`).
+- **Storage**: Reads and writes settings directly to `chrome.storage.local`.
+- **Controls**: Dimension sliders, theme toggles, MRU tab close toggle, and custom CSS text area.
+- **Toolbar Icon**: Changing `isDarkTheme` updates the extension toolbar icon between light and dark variants.
 
 ## Message Protocol
 
-All communication between extension components uses `chrome.runtime.sendMessage` and `chrome.tabs.sendMessage` with structured message objects containing a `type` string from `MessageType`:
-
 | Message Type | Sender | Recipient | Payload | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| `PING` | Background | Content | None | Health check to verify content script injection. |
-| `ContentScriptStarted` | Content | Background | None | Notifies background script that content script is initialized. |
-| `GET_MODEL` | Content | Background | None | Fetches `mruTabs`, `settings`, and zoom factor from background. |
-| `TOGGLE_WALKER` | Background | Content | None | Toggles overlay visibility (`is-open` class). |
-| `CLOSE_POPUP` | Background | Content | None | Forces overlay to close. |
-| `SWITCH_TAB` | Content | Background | `{ selectedTab }` | Activates target tab via `chrome.tabs.update`. |
-| `SEARCH_WEB` | Content | Background | `{ query }` | Executes web search via `chrome.search.query` or Google search URL. |
-| `SEARCH_OMNIBOX` | Content | Background | `{ query }` | Queries browser history and bookmarks matching query. |
-| `NAVIGATE_URL` | Content | Background | `{ url }` | Navigates active tab to direct URL via `chrome.tabs.update`. |
-| `SAVE_POSITION` | Content | Background | `{ position }` | Persists center-relative card offset to settings. |
-| `GetSettings` | Settings UI | Background | None | Retrieves current settings object. |
-| `SetSettings` | Settings UI | Background | `{ settings }` | Overwrites settings object and updates action icon. |
+| `PING` | Background | Content | None | Verifies content script responsiveness. |
+| `ContentScriptStarted` | Content | Background | None | Signals that content script has loaded. |
+| `GET_MODEL` | Content | Background | None | Retrieves tabs array and settings. |
+| `TOGGLE_WALKER` | Background | Content | None | Toggles overlay visibility. |
+| `CLOSE_POPUP` | Background | Content | None | Closes overlay. |
+| `SWITCH_TAB` | Content | Background | `{ selectedTab }` | Activates tab via `chrome.tabs.update`. |
+| `SEARCH_WEB` | Content | Background | `{ query }` | Executes web search. |
+| `SEARCH_OMNIBOX` | Content | Background | `{ query }` | Requests history and bookmark search results. |
+| `NAVIGATE_URL` | Content | Background | `{ url }` | Navigates active tab to URL. |
+| `SAVE_POSITION` | Content | Background | `{ position }` | Saves card position offset. |
+| `GetSettings` | Settings | Background | None | Retrieves settings object. |
+| `SetSettings` | Settings | Background | `{ settings }` | Saves settings object. |
 
-## Cross-Browser Compatibility
+## Cross-Browser Differences
 
-- **Chrome (`chrome-extension/`)**: Operates on Manifest V3 with background service worker (`background.service_worker`) and Chrome `_favicon/` API.
-- **Firefox (`firefox-extension/`)**: Operates on Manifest V3 WebExtensions (`background.scripts`) with `browser` API polyfill (`const api = typeof browser !== 'undefined' ? browser : chrome;`) and `browser_specific_settings.gecko`.
+- **Chrome (`chrome-extension/`)**: Uses Manifest V3 background service worker and Chrome `_favicon/` API.
+- **Firefox (`firefox-extension/`)**: Uses Manifest V3 WebExtensions background scripts and standard browser APIs.

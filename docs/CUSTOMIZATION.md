@@ -1,48 +1,48 @@
-# Tab Walker — Customization & Styling Guide
+# Customization & Styling
 
-Tab Walker provides comprehensive UI customization options through its popup options page and supports deep visual overrides via a custom CSS layer injected into its isolated Shadow DOM root.
+Tab Walker provides visual settings in the options page and supports custom CSS overrides inside the Shadow DOM root.
 
 ## Settings Options
 
-Settings are accessible by clicking the extension icon in your browser toolbar or opening `settings/index.html`. All options are auto-saved to `chrome.storage.local`.
+Settings are accessed via the extension popup (`settings/index.html`) and saved to `chrome.storage.local`.
 
 | Setting Field | Control Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `isDarkTheme` | Toggle Switch | `false` | Switches card theme between Light and Dark mode. Dynamically updates extension action icon between `icon16.png` and `icon-light16.png`. |
-| `popupWidth` | Capsule Range | `460px` | Width of the overlay search card (range: `300px` to `800px`, step: `25px`). |
-| `windowHeight` | Capsule Range | `500px` | Maximum height of the overlay search card (range: `200px` to `900px`, step: `25px`). |
-| `tabHeight` | Capsule Range | `42px` | Minimum height of individual item rows in the list (range: `28px` to `60px`, step: `2px`). |
-| `fontSize` | Capsule Range | `15px` | Base font size for item title text (range: `12px` to `22px`, step: `1px`). |
-| `iconSize` | Capsule Range | `20px` | Favicon and result type icon size (range: `14px` to `32px`, step: `2px`). |
-| `opacity` | Capsule Range | `100%` | Opacity of the background overlay backdrop (range: `50%` to `100%`, step: `5%`). |
-| `isSwitchingToPreviouslyUsedTab` | Toggle Switch | `true` | When `true`, closing the active tab automatically focuses the most recently used (MRU) tab. |
-| `customCss` | Textarea | `""` | User-defined CSS rules injected into the Shadow DOM root after built-in theme styles. |
+| `isDarkTheme` | Toggle Switch | `false` | Switches between Light and Dark mode. Updates extension toolbar icon. |
+| `popupWidth` | Range Slider | `460px` | Overlay card width (`300px` to `800px`, step `25px`). |
+| `windowHeight` | Range Slider | `500px` | Overlay card max height (`200px` to `900px`, step `25px`). |
+| `tabHeight` | Range Slider | `42px` | Row minimum height (`28px` to `60px`, step `2px`). |
+| `fontSize` | Range Slider | `15px` | Item title font size (`12px` to `22px`, step `1px`). |
+| `iconSize` | Range Slider | `20px` | Favicon and type icon size (`14px` to `32px`, step `2px`). |
+| `opacity` | Range Slider | `100%` | Backdrop overlay opacity (`50%` to `100%`, step `5%`). |
+| `isSwitchingToPreviouslyUsedTab` | Toggle Switch | `true` | When active tab closes, activates the most recently used (MRU) tab. |
+| `customCss` | Text Area | `""` | CSS rules appended to the `<style id="tw-user-style">` element in the Shadow DOM. |
 
-## Shadow DOM & Semantic CSS Classes
+## Shadow DOM & CSS Classes
 
-The overlay UI lives inside an isolated Shadow DOM (`#tab-walker-host`). User CSS rules entered in the **Custom CSS Overrides** box are injected directly into `<style id="tw-user-style">` inside the shadow root.
+The overlay UI renders inside `#tab-walker-host` Shadow DOM. Rules in `customCss` are injected after built-in styles.
 
-You can target elements using the following stable semantic CSS classes:
+Semantic CSS classes available for styling:
 
 | Class Name | Element Description |
 | :--- | :--- |
-| `.result` | Container element for any result row (alias for `.tw-tab`). |
-| `.result-tab` | Result row representing an open tab. |
-| `.result-search` | Result row representing persistent web search. |
-| `.result-navigate` | Result row representing direct URL navigation. |
-| `.result-history` | Result row representing a history entry. |
-| `.result-bookmark` | Result row representing a bookmark entry. |
-| `.result-selected` | Class added to the currently highlighted/selected item (keyboard navigation or mouse hover). |
-| `.result-title` | Title text element (`<span class="tw-tab__text result-title">`). |
-| `.result-url` | Subtitle URL text element (`<span class="result-url">`). |
-| `.result-type` | Badge label element displaying `TAB`, `SEARCH`, `NAVIGATE`, `HISTORY`, or `BOOKMARK`. |
-| `mark.tw-highlight` | Highlighted text range matching search query terms. |
+| `.result` | Result row container (alias for `.tw-tab`). |
+| `.result-tab` | Row representing an open tab. |
+| `.result-search` | Row representing web search execution. |
+| `.result-navigate` | Row representing direct URL navigation. |
+| `.result-history` | Row representing a history item. |
+| `.result-bookmark` | Row representing a bookmark item. |
+| `.result-selected` | Class applied to the currently selected row. |
+| `.result-title` | Title text element (`<span class="result-title">`). |
+| `.result-url` | Subtitle URL element (`<span class="result-url">`). |
+| `.result-type` | Type badge label (`TAB`, `SEARCH`, `NAVIGATE`, `HISTORY`, `BOOKMARK`). |
+| `mark.tw-highlight` | Highlighted matching query text. |
 
 ## Custom CSS Examples
 
-Copy and paste any of these examples into the **Custom CSS Overrides** box in Tab Walker Settings:
+Enter these rules in the **Custom CSS Overrides** box in Tab Walker Settings:
 
-### 1. Custom Accent Colors
+### Custom Accent Color
 
 ```css
 .tw-card {
@@ -57,7 +57,7 @@ mark.tw-highlight {
 }
 ```
 
-### 2. Distinct Badge Colors per Result Type
+### Result Type Badge Colors
 
 ```css
 .result-tab .result-type {
@@ -86,9 +86,7 @@ mark.tw-highlight {
 }
 ```
 
-### 3. Always Show Badges
-
-By default, item badges are semi-transparent and become fully opaque when hovered or selected. To make badges visible at all times:
+### Always-Visible Badges
 
 ```css
 .result-type {
@@ -96,7 +94,7 @@ By default, item badges are semi-transparent and become fully opaque when hovere
 }
 ```
 
-### 4. Compact Ultra-Density View
+### Compact View
 
 ```css
 .tw-card {
@@ -110,6 +108,6 @@ By default, item badges are semi-transparent and become fully opaque when hovere
 }
 
 .result-url {
-  display: none !important; /* Hide URL subtitles for ultra-compact tab switching */
+  display: none !important;
 }
 ```
