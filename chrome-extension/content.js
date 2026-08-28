@@ -61,7 +61,7 @@
       /* Global Theme Tokens - Spacing */
       --tw-padding-card: 12px 12px 10px 12px;
       --tw-padding-tab: 0 16px;
-      --tw-padding-search: 0 12px 0 34px;
+      --tw-padding-search: 0 12px 0 40px;
       --tw-margin-search: 0 0 8px 0;
       --tw-gap-tabs: 2px;
       --tw-padding-tabs-list: 2px 0;
@@ -80,7 +80,7 @@
       --tw-height-search: 38px;
       --tw-height-tab: 46px;
       --tw-size-icon: 20px;
-      --tw-size-search-icon: 14px;
+      --tw-size-search-icon: 18px;
       --tw-width-scrollbar: 4px;
       --tw-opacity-overlay: 1;
     }
@@ -178,7 +178,7 @@
     }
     .tw-search-icon {
       position: absolute;
-      left: 12px;
+      left: 13px;
       top: 50%;
       transform: translateY(-50%);
       width: var(--tw-size-search-icon);
