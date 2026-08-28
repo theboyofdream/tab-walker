@@ -933,13 +933,26 @@
     updateOmniboxSearch();
   });
 
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closePopup();
+    }
+  });
+
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
 
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      closePopup();
+      if (searchInput.value.length > 0 || searchQuery.length > 0) {
+        searchQuery = '';
+        searchInput.value = '';
+        selectedIndex = 0;
+        updateOmniboxSearch();
+      } else {
+        closePopup();
+      }
       return;
     }
 
