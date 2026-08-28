@@ -180,6 +180,11 @@ async function activateTab({ id, windowId }) {
   }
 }
 
+async function getActiveTabInCurrentWindow() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab;
+}
+
 async function searchHistoryAndBookmarks(query) {
   const trimmed = (query || '').trim();
   let historyResults = [];
