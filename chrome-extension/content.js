@@ -943,6 +943,7 @@
       searchInput.value = '';
       selectedIndex = allTabs.length > 1 ? 1 : 0;
       updateOmniboxSearch();
+      searchInput.focus();
     } else {
       closePopup();
     }
