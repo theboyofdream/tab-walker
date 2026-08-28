@@ -553,11 +553,11 @@
 
     let baseScore = 0;
     if (itemType === 'TAB') {
-      baseScore = 1000 - (indexOrTime * 3); // MRU order preference
-    } else if (itemType === 'BOOKMARK') {
-      baseScore = 500;
+      baseScore = 10000 - (indexOrTime * 3); // 1. Tabs
     } else if (itemType === 'HISTORY') {
-      baseScore = 300;
+      baseScore = 4000; // 3. History
+    } else if (itemType === 'BOOKMARK') {
+      baseScore = 1000; // 4. Bookmarks
     }
 
     return baseScore + matchScore;
@@ -658,7 +658,7 @@
       }
     });
 
-    // 2. Direct URL navigation item if applicable
+    // 2. Direct URL navigation item & Persistent web search suggestion (2. Search Suggestions)
     const extraResults = [];
     if (isUrlLike(rawQuery)) {
       const targetUrl = /^https?:\/\//i.test(rawQuery) ? rawQuery : `https://${rawQuery}`;
@@ -666,17 +666,16 @@
         itemType: 'NAVIGATE',
         title: `Navigate to ${rawQuery}`,
         url: targetUrl,
-        score: 1500
+        score: 7500
       });
     }
 
-    // 3. Persistent web search suggestion
     extraResults.push({
       itemType: 'SEARCH',
       title: `Search the web for "${rawQuery}"`,
       url: rawQuery,
       query: rawQuery,
-      score: -9999
+      score: 7000
     });
 
     // Immediate initial render with local tabs + navigation/search
