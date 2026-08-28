@@ -945,14 +945,8 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      if (searchInput.value.length > 0 || searchQuery.length > 0) {
-        searchQuery = '';
-        searchInput.value = '';
-        selectedIndex = 0;
-        updateOmniboxSearch();
-      } else {
-        closePopup();
-      }
+      e.stopImmediatePropagation();
+      closePopup();
       return;
     }
 
