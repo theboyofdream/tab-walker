@@ -945,7 +945,8 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      const hasText = searchInput.value.length > 0 || searchQuery.length > 0;
+      e.stopImmediatePropagation();
+      const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
       if (hasText) {
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
         searchQuery = '';
