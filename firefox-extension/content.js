@@ -1,5 +1,5 @@
 /**
- * Tab Walker - Firefox Extension Content Script
+ * Tab Walker - Content Script
  * Omnibox-style search overlay supporting open tabs, history, bookmarks, web search, and direct URL navigation.
  * Centralized themeable CSS tokens with user CSS override layer.
  * Closes automatically if window loses focus.
@@ -9,8 +9,6 @@
 (function () {
   if (window.__tabWalkerInjected) return;
   window.__tabWalkerInjected = true;
-
-  const api = typeof browser !== 'undefined' ? browser : chrome;
 
   const MessageType = {
     PING: 'PING',
@@ -455,7 +453,7 @@
 
       settings.position = posOffset;
 
-      api.runtime.sendMessage({
+      chrome.runtime.sendMessage({
         type: MessageType.SAVE_POSITION,
         position: posOffset
       });
@@ -502,7 +500,26 @@
 
   function getFaviconUrl(item) {
     if (item.favIconUrl && !item.favIconUrl.startsWith('chrome://') && !item.favIconUrl.startsWith('about:')) {
+      if (window.location.protocol === 'https:' && item.favIconUrl.startsWith('http://')) {
+        if (item.url) {
+          try {
+            const faviconUrl = new URL(`chrome-extension://${chrome.runtime.id}/_favicon/`);
+            faviconUrl.searchParams.set('pageUrl', item.url);
+            faviconUrl.searchParams.set('size', '64');
+            return faviconUrl.href;
+          } catch (e) {}
+        }
+        return null;
+      }
       return item.favIconUrl;
+    }
+    if (item.url) {
+      try {
+        const faviconUrl = new URL(`chrome-extension://${chrome.runtime.id}/_favicon/`);
+        faviconUrl.searchParams.set('pageUrl', item.url);
+        faviconUrl.searchParams.set('size', '64');
+        return faviconUrl.href;
+      } catch (e) {}
     }
     return null;
   }
@@ -688,7 +705,7 @@
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
 
     searchDebounceTimer = setTimeout(() => {
-      api.runtime.sendMessage({
+      chrome.runtime.sendMessage({
         type: MessageType.SEARCH_OMNIBOX,
         query: rawQuery
       }, (response) => {
@@ -857,17 +874,17 @@
     closePopup();
 
     if (item.itemType === 'TAB' && item.tab) {
-      api.runtime.sendMessage({
+      chrome.runtime.sendMessage({
         type: MessageType.SWITCH_TAB,
         selectedTab: item.tab
       });
     } else if (item.itemType === 'NAVIGATE' || item.itemType === 'BOOKMARK' || item.itemType === 'HISTORY') {
-      api.runtime.sendMessage({
+      chrome.runtime.sendMessage({
         type: MessageType.NAVIGATE_URL,
         url: item.url
       });
     } else if (item.itemType === 'SEARCH') {
-      api.runtime.sendMessage({
+      chrome.runtime.sendMessage({
         type: MessageType.SEARCH_WEB,
         query: item.query
       });
@@ -875,7 +892,7 @@
   }
 
   function openPopup() {
-    api.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
+    chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
       if (!model || !model.tabs) return;
 
       allTabs = model.tabs || [];
@@ -938,6 +955,9 @@
       selectedIndex = allTabs.length > 1 ? 1 : 0;
       updateOmniboxSearch();
       searchInput.focus();
+      requestAnimationFrame(() => {
+        searchInput.focus();
+      });
     } else {
       closePopup();
     }
@@ -956,6 +976,35 @@
     handleEscapeKey(e);
   });
 
+  let isInteracting = false;
+
+  card.addEventListener('mousedown', () => {
+    isInteracting = true;
+  });
+
+  window.addEventListener('mouseup', () => {
+    setTimeout(() => {
+      isInteracting = false;
+    }, 50);
+  });
+
+  searchInput.addEventListener('blur', () => {
+    if (!isOpen || isInteracting) return;
+    const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
+    if (hasText) {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchQuery = '';
+      searchInput.value = '';
+      selectedIndex = allTabs.length > 1 ? 1 : 0;
+      updateOmniboxSearch();
+      requestAnimationFrame(() => {
+        searchInput.focus();
+      });
+    } else {
+      closePopup();
+    }
+  });
+
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       closePopup();
@@ -970,6 +1019,7 @@
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0) {
         selectedIndex = (selectedIndex + 1) % filteredResults.length;
         highlightSelectedResult();
@@ -980,6 +1030,7 @@
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0) {
         selectedIndex = (selectedIndex - 1 + filteredResults.length) % filteredResults.length;
         highlightSelectedResult();
@@ -990,15 +1041,24 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0 && filteredResults[selectedIndex]) {
         activateResult(filteredResults[selectedIndex]);
       } else if (searchQuery.trim().length > 0) {
         closePopup();
-        api.runtime.sendMessage({
+        chrome.runtime.sendMessage({
           type: MessageType.SEARCH_WEB,
           query: searchQuery.trim()
         });
       }
+      return;
+    }
+
+    // Stop propagation of all key events while Tab Walker is open
+    // to prevent Vimium, extension, and webpage shortcuts from hijacking search input.
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') {
+      e.stopImmediatePropagation();
     }
   }, true);
 
@@ -1012,7 +1072,7 @@
   });
 
   // Message listener from background script
-  api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === MessageType.PING) {
       sendResponse({ status: 'ok' });
       return true;
@@ -1034,5 +1094,5 @@
   });
 
   // Notify background script that content script is ready
-  api.runtime.sendMessage({ type: MessageType.ContentScriptStarted });
+  chrome.runtime.sendMessage({ type: MessageType.ContentScriptStarted });
 })();

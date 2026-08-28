@@ -499,7 +499,18 @@
   });
 
   function getFaviconUrl(item) {
-    if (item.favIconUrl && !item.favIconUrl.startsWith('chrome://')) {
+    if (item.favIconUrl && !item.favIconUrl.startsWith('chrome://') && !item.favIconUrl.startsWith('about:')) {
+      if (window.location.protocol === 'https:' && item.favIconUrl.startsWith('http://')) {
+        if (item.url) {
+          try {
+            const faviconUrl = new URL(`chrome-extension://${chrome.runtime.id}/_favicon/`);
+            faviconUrl.searchParams.set('pageUrl', item.url);
+            faviconUrl.searchParams.set('size', '64');
+            return faviconUrl.href;
+          } catch (e) {}
+        }
+        return null;
+      }
       return item.favIconUrl;
     }
     if (item.url) {
@@ -944,6 +955,9 @@
       selectedIndex = allTabs.length > 1 ? 1 : 0;
       updateOmniboxSearch();
       searchInput.focus();
+      requestAnimationFrame(() => {
+        searchInput.focus();
+      });
     } else {
       closePopup();
     }
@@ -962,6 +976,35 @@
     handleEscapeKey(e);
   });
 
+  let isInteracting = false;
+
+  card.addEventListener('mousedown', () => {
+    isInteracting = true;
+  });
+
+  window.addEventListener('mouseup', () => {
+    setTimeout(() => {
+      isInteracting = false;
+    }, 50);
+  });
+
+  searchInput.addEventListener('blur', () => {
+    if (!isOpen || isInteracting) return;
+    const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
+    if (hasText) {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchQuery = '';
+      searchInput.value = '';
+      selectedIndex = allTabs.length > 1 ? 1 : 0;
+      updateOmniboxSearch();
+      requestAnimationFrame(() => {
+        searchInput.focus();
+      });
+    } else {
+      closePopup();
+    }
+  });
+
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       closePopup();
@@ -976,6 +1019,7 @@
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0) {
         selectedIndex = (selectedIndex + 1) % filteredResults.length;
         highlightSelectedResult();
@@ -986,6 +1030,7 @@
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0) {
         selectedIndex = (selectedIndex - 1 + filteredResults.length) % filteredResults.length;
         highlightSelectedResult();
@@ -996,6 +1041,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (filteredResults.length > 0 && filteredResults[selectedIndex]) {
         activateResult(filteredResults[selectedIndex]);
       } else if (searchQuery.trim().length > 0) {
@@ -1005,6 +1051,14 @@
           query: searchQuery.trim()
         });
       }
+      return;
+    }
+
+    // Stop propagation of all key events while Tab Walker is open
+    // to prevent Vimium, extension, and webpage shortcuts from hijacking search input.
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') {
+      e.stopImmediatePropagation();
     }
   }, true);
 
