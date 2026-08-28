@@ -920,11 +920,39 @@
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
   }
 
+  function handleEscapeKey(e) {
+    const isEscape = e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27;
+    if (!isEscape) return false;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') {
+      e.stopImmediatePropagation();
+    }
+
+    const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
+    if (hasText) {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchQuery = '';
+      searchInput.value = '';
+      selectedIndex = allTabs.length > 1 ? 1 : 0;
+      updateOmniboxSearch();
+    } else {
+      closePopup();
+    }
+    return true;
+  }
+
   // Keyboard navigation & search input listener
   searchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value;
     selectedIndex = 0;
     updateOmniboxSearch();
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (!isOpen) return;
+    handleEscapeKey(e);
   });
 
   overlay.addEventListener('click', (e) => {
@@ -936,22 +964,7 @@
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
 
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
-      if (hasText) {
-        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-        searchQuery = '';
-        searchInput.value = '';
-        selectedIndex = allTabs.length > 1 ? 1 : 0;
-        updateOmniboxSearch();
-      } else {
-        closePopup();
-      }
-      return;
-    }
+    if (handleEscapeKey(e)) return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
