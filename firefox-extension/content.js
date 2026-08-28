@@ -939,9 +939,12 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      if (searchInput.value.length > 0 || searchQuery.length > 0) {
+      const hasText = searchInput.value.length > 0 || searchQuery.length > 0;
+      if (hasText) {
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
         searchQuery = '';
         searchInput.value = '';
+        selectedIndex = allTabs.length > 1 ? 1 : 0;
         updateOmniboxSearch();
       } else {
         closePopup();
