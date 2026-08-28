@@ -262,7 +262,19 @@ api.commands.onCommand.addListener(async (command) => {
     try {
       await api.tabs.sendMessage(sanitized.id, { type: MessageType.TOGGLE_WALKER });
     } catch (err) {
-      console.warn('Could not send message to active tab:', err);
+      if (api.scripting && typeof api.scripting.executeScript === 'function') {
+        try {
+          await api.scripting.executeScript({
+            target: { tabId: sanitized.id },
+            files: ['content.js']
+          });
+          await api.tabs.sendMessage(sanitized.id, { type: MessageType.TOGGLE_WALKER }).catch(() => {});
+        } catch (e) {
+          console.warn('Could not send message to active tab:', e);
+        }
+      } else {
+        console.warn('Could not send message to active tab:', err);
+      }
     }
   }
 });
@@ -272,9 +284,7 @@ api.windows.onFocusChanged.addListener(async (windowId) => {
     isWindowFocused = false;
     const activeTab = await getActiveTabInCurrentWindow();
     if (activeTab && activeTab.id) {
-      try {
-        api.tabs.sendMessage(activeTab.id, { type: MessageType.CLOSE_POPUP });
-      } catch (e) {}
+      api.tabs.sendMessage(activeTab.id, { type: MessageType.CLOSE_POPUP }).catch(() => {});
     }
     return;
   }

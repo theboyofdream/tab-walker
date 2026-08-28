@@ -258,7 +258,19 @@ chrome.commands.onCommand.addListener(async (command) => {
     try {
       await chrome.tabs.sendMessage(sanitized.id, { type: MessageType.TOGGLE_WALKER });
     } catch (err) {
-      console.warn('Could not send message to active tab:', err);
+      if (chrome.scripting && typeof chrome.scripting.executeScript === 'function') {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: sanitized.id },
+            files: ['content.js']
+          });
+          await chrome.tabs.sendMessage(sanitized.id, { type: MessageType.TOGGLE_WALKER }).catch(() => {});
+        } catch (e) {
+          console.warn('Could not send message to active tab:', e);
+        }
+      } else {
+        console.warn('Could not send message to active tab:', err);
+      }
     }
   }
 });
@@ -268,9 +280,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
     isWindowFocused = false;
     const activeTab = await getActiveTabInCurrentWindow();
     if (activeTab && activeTab.id) {
-      try {
-        chrome.tabs.sendMessage(activeTab.id, { type: MessageType.CLOSE_POPUP });
-      } catch (e) {}
+      chrome.tabs.sendMessage(activeTab.id, { type: MessageType.CLOSE_POPUP }).catch(() => {});
     }
     return;
   }
