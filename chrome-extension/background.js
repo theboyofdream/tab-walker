@@ -12,6 +12,8 @@ const MessageType = {
   CLOSE_POPUP: 'CLOSE_POPUP',
   TOGGLE_WALKER: 'TOGGLE_WALKER',
   SEARCH_WEB: 'SEARCH_WEB',
+  SEARCH_OMNIBOX: 'SEARCH_OMNIBOX',
+  NAVIGATE_URL: 'NAVIGATE_URL',
   SAVE_POSITION: 'SAVE_POSITION',
   GetSettings: 'GetSettings',
   SetSettings: 'SetSettings'
@@ -178,9 +180,63 @@ async function activateTab({ id, windowId }) {
   }
 }
 
-async function getActiveTabInCurrentWindow() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
+async function searchHistoryAndBookmarks(query) {
+  const trimmed = (query || '').trim();
+  let historyResults = [];
+  let bookmarkResults = [];
+
+  if (trimmed.length > 0) {
+    const historyPromise = new Promise((resolve) => {
+      if (chrome.history && typeof chrome.history.search === 'function') {
+        chrome.history.search({ text: trimmed, maxResults: 30, startTime: 0 }, (results) => {
+          if (chrome.runtime.lastError || !results) {
+            resolve([]);
+          } else {
+            resolve(results.map(h => ({
+              id: h.id,
+              title: h.title || '',
+              url: h.url || '',
+              lastVisitTime: h.lastVisitTime || 0,
+              visitCount: h.visitCount || 0
+            })));
+          }
+        });
+      } else {
+        resolve([]);
+      }
+    });
+
+    const bookmarkPromise = new Promise((resolve) => {
+      if (chrome.bookmarks && typeof chrome.bookmarks.search === 'function') {
+        chrome.bookmarks.search(trimmed, (results) => {
+          if (chrome.runtime.lastError || !results) {
+            resolve([]);
+          } else {
+            resolve(results.filter(b => b.url).slice(0, 30).map(b => ({
+              id: b.id,
+              title: b.title || '',
+              url: b.url || ''
+            })));
+          }
+        });
+      } else {
+        resolve([]);
+      }
+    });
+
+    [historyResults, bookmarkResults] = await Promise.all([historyPromise, bookmarkPromise]);
+  }
+
+  return { history: historyResults, bookmarks: bookmarkResults };
+}
+
+async function navigateUrl(url) {
+  const activeTab = await getActiveTabInCurrentWindow();
+  if (activeTab && activeTab.id && !isRestrictedUrl(activeTab.url)) {
+    await chrome.tabs.update(activeTab.id, { url });
+  } else {
+    await chrome.tabs.create({ url });
+  }
 }
 
 // Single command: toggle-walker (Alt+Y)
@@ -307,6 +363,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             url: `https://www.google.com/search?q=${encodeURIComponent(message.query)}`
           });
         }
+      }
+      break;
+    }
+    case MessageType.SEARCH_OMNIBOX: {
+      (async () => {
+        const { query } = message;
+        const results = await searchHistoryAndBookmarks(query);
+        sendResponse(results);
+      })();
+      return true;
+    }
+    case MessageType.NAVIGATE_URL: {
+      if (message.url) {
+        navigateUrl(message.url);
       }
       break;
     }

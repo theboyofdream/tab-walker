@@ -13,6 +13,9 @@ const MessageType = {
   GET_MODEL: 'GET_MODEL',
   CLOSE_POPUP: 'CLOSE_POPUP',
   TOGGLE_WALKER: 'TOGGLE_WALKER',
+  SEARCH_WEB: 'SEARCH_WEB',
+  SEARCH_OMNIBOX: 'SEARCH_OMNIBOX',
+  NAVIGATE_URL: 'NAVIGATE_URL',
   SAVE_POSITION: 'SAVE_POSITION',
   GetSettings: 'GetSettings',
   SetSettings: 'SetSettings'
@@ -182,6 +185,65 @@ async function getActiveTabInCurrentWindow() {
   return tabs[0];
 }
 
+async function searchHistoryAndBookmarks(query) {
+  const trimmed = (query || '').trim();
+  let historyResults = [];
+  let bookmarkResults = [];
+
+  if (trimmed.length > 0) {
+    const historyPromise = new Promise((resolve) => {
+      if (api.history && typeof api.history.search === 'function') {
+        api.history.search({ text: trimmed, maxResults: 30, startTime: 0 }, (results) => {
+          if (api.runtime.lastError || !results) {
+            resolve([]);
+          } else {
+            resolve(results.map(h => ({
+              id: h.id,
+              title: h.title || '',
+              url: h.url || '',
+              lastVisitTime: h.lastVisitTime || 0,
+              visitCount: h.visitCount || 0
+            })));
+          }
+        });
+      } else {
+        resolve([]);
+      }
+    });
+
+    const bookmarkPromise = new Promise((resolve) => {
+      if (api.bookmarks && typeof api.bookmarks.search === 'function') {
+        api.bookmarks.search(trimmed, (results) => {
+          if (api.runtime.lastError || !results) {
+            resolve([]);
+          } else {
+            resolve(results.filter(b => b.url).slice(0, 30).map(b => ({
+              id: b.id,
+              title: b.title || '',
+              url: b.url || ''
+            })));
+          }
+        });
+      } else {
+        resolve([]);
+      }
+    });
+
+    [historyResults, bookmarkResults] = await Promise.all([historyPromise, bookmarkPromise]);
+  }
+
+  return { history: historyResults, bookmarks: bookmarkResults };
+}
+
+async function navigateUrl(url) {
+  const activeTab = await getActiveTabInCurrentWindow();
+  if (activeTab && activeTab.id && !isRestrictedUrl(activeTab.url)) {
+    await api.tabs.update(activeTab.id, { url });
+  } else {
+    await api.tabs.create({ url });
+  }
+}
+
 api.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-walker') {
     await registryReadyPromise;
@@ -284,6 +346,34 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case MessageType.SWITCH_TAB: {
       if (message.selectedTab) {
         activateTab(message.selectedTab);
+      }
+      break;
+    }
+    case MessageType.SEARCH_WEB: {
+      if (message.query) {
+        if (api.search && api.search.search) {
+          api.search.search({
+            query: message.query
+          });
+        } else {
+          api.tabs.create({
+            url: `https://www.google.com/search?q=${encodeURIComponent(message.query)}`
+          });
+        }
+      }
+      break;
+    }
+    case MessageType.SEARCH_OMNIBOX: {
+      (async () => {
+        const { query } = message;
+        const results = await searchHistoryAndBookmarks(query);
+        sendResponse(results);
+      })();
+      return true;
+    }
+    case MessageType.NAVIGATE_URL: {
+      if (message.url) {
+        navigateUrl(message.url);
       }
       break;
     }
