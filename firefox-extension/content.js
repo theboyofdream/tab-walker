@@ -939,8 +939,13 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      e.stopImmediatePropagation();
-      closePopup();
+      if (searchInput.value.length > 0 || searchQuery.length > 0) {
+        searchQuery = '';
+        searchInput.value = '';
+        updateOmniboxSearch();
+      } else {
+        closePopup();
+      }
       return;
     }
 
