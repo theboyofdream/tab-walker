@@ -62,8 +62,8 @@ Renders and handles the overlay UI inside web pages.
 Loaded from the extension toolbar action popup.
 
 - **Storage**: Reads and writes settings directly to `chrome.storage.local`.
-- **Controls**: Dimension sliders, theme toggles, MRU tab close toggle, and custom CSS text area.
-- **Toolbar Icon**: Changing `isDarkTheme` updates the extension toolbar icon between light and dark variants.
+- **Controls**: Dimension sliders, theme select (System, Light, Dark), MRU tab close toggle, and custom CSS text area.
+- **Toolbar Icon**: Changing theme updates the extension toolbar icon between light and dark variants.
 
 ## Message Protocol
 

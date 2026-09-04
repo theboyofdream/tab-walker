@@ -5,7 +5,9 @@
  */
 
 const defaultSettings = {
+  theme: 'system',
   isDarkTheme: false,
+  scale: 1,
   popupWidth: 460,
   windowHeight: 500,
   tabHeight: 42,
@@ -18,7 +20,7 @@ const defaultSettings = {
 };
 
 const fields = [
-  'isDarkTheme',
+  'theme',
   'popupWidth',
   'windowHeight',
   'tabHeight',
@@ -30,13 +32,25 @@ const fields = [
 ];
 
 const sliderIds = ['popupWidth', 'windowHeight', 'tabHeight', 'fontSize', 'iconSize', 'opacity'];
-const toggleIds = ['isDarkTheme', 'isSwitchingToPreviouslyUsedTab'];
+const toggleIds = ['isSwitchingToPreviouslyUsedTab'];
 
 const form = document.getElementById('settings-form');
 const resetBtn = document.getElementById('reset-btn');
 const saveStatus = document.getElementById('save-status');
 
-function applyTheme(isDark) {
+let currentThemeMode = 'system';
+
+function applyTheme(themeValue) {
+  currentThemeMode = themeValue || 'system';
+  let isDark = false;
+  if (themeValue === 'dark') {
+    isDark = true;
+  } else if (themeValue === 'light') {
+    isDark = false;
+  } else {
+    isDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
   if (isDark) {
     document.body.classList.add('dark-theme');
     document.body.setAttribute('data-theme', 'dark');
@@ -44,6 +58,14 @@ function applyTheme(isDark) {
     document.body.classList.remove('dark-theme');
     document.body.setAttribute('data-theme', 'light');
   }
+}
+
+if (typeof window !== 'undefined' && window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (currentThemeMode === 'system') {
+      applyTheme('system');
+    }
+  });
 }
 
 function updateToggleAria(toggleId, isChecked) {
@@ -128,7 +150,7 @@ async function loadSettings() {
     }
   });
 
-  applyTheme(current.isDarkTheme);
+  applyTheme(current.theme || (current.isDarkTheme ? 'dark' : 'system'));
   updateAllCapsuleSliders(current);
 }
 
@@ -149,7 +171,7 @@ async function saveSettings() {
     }
   });
 
-  applyTheme(settings.isDarkTheme);
+  applyTheme(settings.theme);
   updateAllCapsuleSliders(settings);
   await chrome.storage.local.set({ settings });
   showSaveStatus();

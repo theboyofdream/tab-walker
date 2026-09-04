@@ -22,7 +22,9 @@ const MessageType = {
 };
 
 const defaultSettings = {
+  theme: 'system',
   isDarkTheme: false,
+  scale: 1,
   popupWidth: 460,
   windowHeight: 500,
   tabHeight: 42,
@@ -39,8 +41,16 @@ let isWindowFocused = true;
 let isSwitchingProgrammatically = false;
 let registryReadyPromise = null;
 
-function updateActionIcon(isDarkTheme) {
-  const iconPrefix = isDarkTheme ? 'icon-light' : 'icon';
+function updateActionIcon(theme, isDarkFallback) {
+  let isDark = false;
+  if (theme === 'dark') {
+    isDark = true;
+  } else if (theme === 'light') {
+    isDark = false;
+  } else if (typeof isDarkFallback === 'boolean') {
+    isDark = isDarkFallback;
+  }
+  const iconPrefix = isDark ? 'icon-light' : 'icon';
   const actionApi = api.action || api.browserAction;
   if (actionApi && typeof actionApi.setIcon === 'function') {
     actionApi.setIcon({
@@ -79,7 +89,7 @@ async function updateSettings(newSettings) {
   const current = await getSettings();
   const updated = { ...current, ...newSettings };
   await api.storage.local.set({ settings: updated });
-  updateActionIcon(updated.isDarkTheme);
+  updateActionIcon(updated.theme, updated.isDarkTheme);
   return updated;
 }
 
@@ -94,7 +104,7 @@ async function initializeTabRegistry() {
     getSettings()
   ]);
 
-  updateActionIcon(settings.isDarkTheme);
+  updateActionIcon(settings.theme, settings.isDarkTheme);
 
   const openTabsMap = new Map();
   for (const win of allWindows) {
@@ -325,7 +335,7 @@ api.tabs.onRemoved.addListener(async (tabId) => {
 api.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local' && changes.settings) {
     const newSettings = changes.settings.newValue || {};
-    updateActionIcon(newSettings.isDarkTheme);
+    updateActionIcon(newSettings.theme, newSettings.isDarkTheme);
   }
 });
 

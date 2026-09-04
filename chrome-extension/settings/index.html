@@ -12,17 +12,18 @@
     </header>
 
     <form id="settings-form" class="settings-form">
-      <!-- Dark Mode -->
+      <!-- Theme Selection -->
       <div class="setting-row">
-        <label for="isDarkTheme" class="setting-label">
-          <span>Dark Theme</span>
-          <small>Use dark colors for the overlay card</small>
+        <label for="theme" class="setting-label">
+          <span>Theme</span>
+          <small>Select theme (System follows OS theme)</small>
         </label>
-        <div class="craft-toggle-wrapper">
-          <input type="checkbox" id="isDarkTheme" class="craft-toggle-input" role="switch" aria-checked="false">
-          <div class="craft-toggle-track">
-            <div class="craft-toggle-thumb"></div>
-          </div>
+        <div class="craft-select-wrapper">
+          <select id="theme" class="craft-select">
+            <option value="system">System (Default)</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
         </div>
       </div>
 

@@ -20,7 +20,8 @@
     SEARCH_WEB: 'SEARCH_WEB',
     SEARCH_OMNIBOX: 'SEARCH_OMNIBOX',
     NAVIGATE_URL: 'NAVIGATE_URL',
-    SAVE_POSITION: 'SAVE_POSITION'
+    SAVE_POSITION: 'SAVE_POSITION',
+    SetSettings: 'SetSettings'
   };
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
@@ -49,39 +50,42 @@
       pointer-events: none !important;
       display: block !important;
 
+      /* Global Theme Tokens - Scale */
+      --tw-scale: 1;
+
       /* Global Theme Tokens - Typography */
       --tw-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
-      --tw-font-size-base: 15px;
-      --tw-font-size-search: 14px;
-      --tw-font-size-badge: 11.5px;
+      --tw-font-size-base: calc(15px * var(--tw-scale, 1));
+      --tw-font-size-search: calc(14px * var(--tw-scale, 1));
+      --tw-font-size-badge: calc(11.5px * var(--tw-scale, 1));
       --tw-font-weight-normal: 400;
       --tw-font-weight-medium: 500;
       --tw-letter-spacing: -0.01em;
 
       /* Global Theme Tokens - Spacing */
-      --tw-padding-card: 12px 12px 10px 12px;
-      --tw-padding-tab: 0 16px;
-      --tw-padding-search: 0 12px 0 40px;
-      --tw-margin-search: 0 0 8px 0;
-      --tw-gap-tabs: 2px;
-      --tw-padding-tabs-list: 2px 0;
+      --tw-padding-card: calc(12px * var(--tw-scale, 1)) calc(12px * var(--tw-scale, 1)) calc(10px * var(--tw-scale, 1)) calc(12px * var(--tw-scale, 1));
+      --tw-padding-tab: 0 calc(16px * var(--tw-scale, 1));
+      --tw-padding-search: 0 calc(12px * var(--tw-scale, 1)) 0 calc(40px * var(--tw-scale, 1));
+      --tw-margin-search: 0 0 calc(8px * var(--tw-scale, 1)) 0;
+      --tw-gap-tabs: calc(2px * var(--tw-scale, 1));
+      --tw-padding-tabs-list: calc(2px * var(--tw-scale, 1)) 0;
 
       /* Global Theme Tokens - Radius */
-      --tw-radius-card: 14px;
-      --tw-radius-search: 8px;
-      --tw-radius-tab: 8px;
-      --tw-radius-badge: 4px;
-      --tw-radius-icon: 3px;
-      --tw-radius-scrollbar: 2px;
+      --tw-radius-card: calc(14px * var(--tw-scale, 1));
+      --tw-radius-search: calc(8px * var(--tw-scale, 1));
+      --tw-radius-tab: calc(8px * var(--tw-scale, 1));
+      --tw-radius-badge: calc(4px * var(--tw-scale, 1));
+      --tw-radius-icon: calc(3px * var(--tw-scale, 1));
+      --tw-radius-scrollbar: calc(2px * var(--tw-scale, 1));
 
       /* Global Theme Tokens - Sizing */
-      --tw-width-card: 460px;
-      --tw-max-height-card: 500px;
-      --tw-height-search: 38px;
-      --tw-height-tab: 46px;
-      --tw-size-icon: 20px;
-      --tw-size-search-icon: 18px;
-      --tw-width-scrollbar: 4px;
+      --tw-width-card: calc(460px * var(--tw-scale, 1));
+      --tw-max-height-card: calc(500px * var(--tw-scale, 1));
+      --tw-height-search: calc(38px * var(--tw-scale, 1));
+      --tw-height-tab: calc(46px * var(--tw-scale, 1));
+      --tw-size-icon: calc(20px * var(--tw-scale, 1));
+      --tw-size-search-icon: calc(18px * var(--tw-scale, 1));
+      --tw-width-scrollbar: calc(4px * var(--tw-scale, 1));
       --tw-opacity-overlay: 1;
     }
     :host(.is-open) {
@@ -891,6 +895,65 @@
     }
   }
 
+  function isDarkThemeActive(currentSettings) {
+    if (currentSettings.theme === 'dark') return true;
+    if (currentSettings.theme === 'light') return false;
+    if (currentSettings.theme === 'system' || !currentSettings.theme) {
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return true;
+      }
+    }
+    if (typeof currentSettings.isDarkTheme === 'boolean') {
+      return currentSettings.isDarkTheme;
+    }
+    return false;
+  }
+
+  function applyThemeClass() {
+    const isDark = isDarkThemeActive(settings);
+    card.className = 'tw-card' + (isDark ? ' tw-card--dark' : ' tw-card--light');
+  }
+
+  function applySizing() {
+    const scale = typeof settings.scale === 'number' ? settings.scale : 1;
+    host.style.setProperty('--tw-scale', scale);
+    host.style.setProperty('--tw-opacity-overlay', (settings.opacity || 100) / 100);
+    host.style.setProperty('--tw-width-card', `calc(${settings.popupWidth || 460}px * var(--tw-scale, 1))`);
+    host.style.setProperty('--tw-max-height-card', `calc(${settings.windowHeight || 500}px * var(--tw-scale, 1))`);
+    host.style.setProperty('--tw-height-tab', `calc(${settings.tabHeight || 42}px * var(--tw-scale, 1))`);
+    if (settings.fontSize) {
+      host.style.setProperty('--tw-font-size-base', `calc(${settings.fontSize}px * var(--tw-scale, 1))`);
+    }
+    if (settings.iconSize) {
+      host.style.setProperty('--tw-size-icon', `calc(${settings.iconSize}px * var(--tw-scale, 1))`);
+    }
+  }
+
+  function changeScale(delta) {
+    let currentScale = typeof settings.scale === 'number' ? settings.scale : 1;
+    if (delta === 0) {
+      currentScale = 1;
+    } else {
+      currentScale = Math.max(0.6, Math.min(2.0, Math.round((currentScale + delta) * 10) / 10));
+    }
+    settings.scale = currentScale;
+    applySizing();
+    applyCardPosition();
+    chrome.runtime.sendMessage({
+      type: MessageType.SetSettings,
+      settings: { scale: currentScale }
+    });
+  }
+
+  if (window.matchMedia) {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    darkModeMediaQuery.addEventListener('change', () => {
+      if (isOpen) {
+        applyThemeClass();
+      }
+    });
+  }
+
   function openPopup() {
     chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
       if (!model || !model.tabs) return;
@@ -898,18 +961,8 @@
       allTabs = model.tabs || [];
       settings = model.settings || {};
 
-      card.className = 'tw-card' + (settings.isDarkTheme ? ' tw-card--dark' : ' tw-card--light');
-      host.style.setProperty('--tw-opacity-overlay', (settings.opacity || 100) / 100);
-      host.style.setProperty('--tw-width-card', `${settings.popupWidth || 460}px`);
-      host.style.setProperty('--tw-max-height-card', `${settings.windowHeight || 500}px`);
-
-      host.style.setProperty('--tw-height-tab', `${settings.tabHeight || 42}px`);
-      if (settings.fontSize) {
-        host.style.setProperty('--tw-font-size-base', `${settings.fontSize}px`);
-      }
-      if (settings.iconSize) {
-        host.style.setProperty('--tw-size-icon', `${settings.iconSize}px`);
-      }
+      applyThemeClass();
+      applySizing();
 
       // User CSS Override Layer
       userStyle.textContent = settings.customCss || '';
@@ -923,6 +976,10 @@
       updateOmniboxSearch();
       applyCardPosition();
 
+      searchInput.focus();
+      requestAnimationFrame(() => {
+        searchInput.focus();
+      });
       setTimeout(() => {
         searchInput.focus();
       }, 20);
@@ -976,34 +1033,16 @@
     handleEscapeKey(e);
   });
 
-  let isInteracting = false;
-
-  card.addEventListener('mousedown', () => {
-    isInteracting = true;
-  });
-
-  window.addEventListener('mouseup', () => {
-    setTimeout(() => {
-      isInteracting = false;
-    }, 50);
-  });
-
-  searchInput.addEventListener('blur', () => {
-    if (!isOpen || isInteracting) return;
-    const hasText = Boolean((searchInput.value && searchInput.value.length > 0) || (searchQuery && searchQuery.length > 0));
-    if (hasText) {
-      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-      searchQuery = '';
-      searchInput.value = '';
-      selectedIndex = allTabs.length > 1 ? 1 : 0;
-      updateOmniboxSearch();
-      requestAnimationFrame(() => {
-        searchInput.focus();
-      });
-    } else {
-      closePopup();
+  // Shield focus against external page stealing while Walker is open
+  window.addEventListener('focusin', (e) => {
+    if (!isOpen) return;
+    const path = e.composedPath ? e.composedPath() : [];
+    if (!path.includes(host)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      searchInput.focus();
     }
-  });
+  }, true);
 
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
@@ -1015,6 +1054,31 @@
     if (!isOpen) return;
 
     if (handleEscapeKey(e)) return;
+
+    // Handle Ctrl/Cmd +/- and Ctrl/Cmd 0 to resize Walker
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === '+' || e.key === '=' || e.code === 'Equal' || e.code === 'NumpadAdd') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        changeScale(0.1);
+        return;
+      }
+      if (e.key === '-' || e.key === '_' || e.code === 'Minus' || e.code === 'NumpadSubtract') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        changeScale(-0.1);
+        return;
+      }
+      if (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        changeScale(0);
+        return;
+      }
+    }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -1054,8 +1118,29 @@
       return;
     }
 
+    // Ensure focus is directed to searchInput if typing begins
+    if (shadow.activeElement !== searchInput && e.target !== searchInput) {
+      searchInput.focus();
+    }
+
     // Stop propagation of all key events while Tab Walker is open
     // to prevent Vimium, extension, and webpage shortcuts from hijacking search input.
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') {
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  window.addEventListener('keyup', (e) => {
+    if (!isOpen) return;
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') {
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  window.addEventListener('keypress', (e) => {
+    if (!isOpen) return;
     e.stopPropagation();
     if (typeof e.stopImmediatePropagation === 'function') {
       e.stopImmediatePropagation();

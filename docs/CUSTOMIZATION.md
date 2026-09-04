@@ -8,7 +8,8 @@ Settings are accessed via the extension popup (`settings/index.html`) and saved 
 
 | Setting Field | Control Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `isDarkTheme` | Toggle Switch | `false` | Switches between Light and Dark mode. Updates extension toolbar icon. |
+| `theme` | Dropdown Select | `"system"` | Selects theme: `"system"` (default, follows OS dark/light mode), `"light"`, or `"dark"`. |
+| `scale` | Shortcut / Scale | `1` | Zoom scaling factor for the overlay (`0.6` to `2.0`). Adjustable via `Ctrl +/-` and `Ctrl 0`. |
 | `popupWidth` | Range Slider | `460px` | Overlay card width (`300px` to `800px`, step `25px`). |
 | `windowHeight` | Range Slider | `500px` | Overlay card max height (`200px` to `900px`, step `25px`). |
 | `tabHeight` | Range Slider | `42px` | Row minimum height (`28px` to `60px`, step `2px`). |
