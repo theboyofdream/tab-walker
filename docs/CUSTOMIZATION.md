@@ -16,6 +16,7 @@ Settings are accessed via the extension popup (`settings/index.html`) and saved 
 | `fontSize` | Range Slider | `15px` | Item title font size (`12px` to `22px`, step `1px`). |
 | `iconSize` | Range Slider | `20px` | Favicon and type icon size (`14px` to `32px`, step `2px`). |
 | `opacity` | Range Slider | `100%` | Backdrop overlay opacity (`50%` to `100%`, step `5%`). |
+| `overlayBlur` | Range Slider | `0px` | Backdrop overlay blur effect (`0px` to `20px`, step `1px`). |
 | `isSwitchingToPreviouslyUsedTab` | Toggle Switch | `true` | When active tab closes, activates the most recently used (MRU) tab. |
 | `customCss` | Text Area | `""` | CSS rules appended to the `<style id="tw-user-style">` element in the Shadow DOM. |
 

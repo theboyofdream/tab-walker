@@ -18,7 +18,8 @@ const MessageType = {
   NAVIGATE_URL: 'NAVIGATE_URL',
   SAVE_POSITION: 'SAVE_POSITION',
   GetSettings: 'GetSettings',
-  SetSettings: 'SetSettings'
+  SetSettings: 'SetSettings',
+  SYSTEM_THEME_CHANGED: 'SYSTEM_THEME_CHANGED'
 };
 
 const defaultSettings = {
@@ -31,6 +32,7 @@ const defaultSettings = {
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
+  overlayBlur: 0,
   isSwitchingToPreviouslyUsedTab: true,
   customCss: '',
   position: null
@@ -40,6 +42,7 @@ let mruTabs = [];
 let isWindowFocused = true;
 let isSwitchingProgrammatically = false;
 let registryReadyPromise = null;
+let lastKnownSystemDark = false;
 
 function updateActionIcon(theme, isDarkFallback) {
   let isDark = false;
@@ -47,6 +50,8 @@ function updateActionIcon(theme, isDarkFallback) {
     isDark = true;
   } else if (theme === 'light') {
     isDark = false;
+  } else if (theme === 'system' || !theme) {
+    isDark = typeof isDarkFallback === 'boolean' ? isDarkFallback : lastKnownSystemDark;
   } else if (typeof isDarkFallback === 'boolean') {
     isDark = isDarkFallback;
   }
@@ -100,11 +105,15 @@ function saveTabOrder() {
 async function initializeTabRegistry() {
   const [allWindows, storageData, settings] = await Promise.all([
     api.windows.getAll({ populate: true }),
-    api.storage.local.get('tabs'),
+    api.storage.local.get(['tabs', 'isSystemDark']),
     getSettings()
   ]);
 
-  updateActionIcon(settings.theme, settings.isDarkTheme);
+  if (typeof storageData.isSystemDark === 'boolean') {
+    lastKnownSystemDark = storageData.isSystemDark;
+  }
+
+  updateActionIcon(settings.theme, lastKnownSystemDark);
 
   const openTabsMap = new Map();
   for (const win of allWindows) {
@@ -346,15 +355,45 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (message.type) {
     case MessageType.ContentScriptStarted: {
+      if (typeof message.isSystemDark === 'boolean') {
+        lastKnownSystemDark = message.isSystemDark;
+        api.storage.local.set({ isSystemDark: message.isSystemDark });
+        (async () => {
+          const settings = await getSettings();
+          if (settings.theme === 'system' || !settings.theme) {
+            updateActionIcon('system', lastKnownSystemDark);
+          }
+        })();
+      }
       if (sender.tab) {
         addOrUpdateTab(sender.tab);
       }
       break;
     }
+    case MessageType.SYSTEM_THEME_CHANGED: {
+      if (typeof message.isDark === 'boolean') {
+        lastKnownSystemDark = message.isDark;
+        api.storage.local.set({ isSystemDark: message.isDark });
+        (async () => {
+          const settings = await getSettings();
+          if (settings.theme === 'system' || !settings.theme) {
+            updateActionIcon('system', lastKnownSystemDark);
+          }
+        })();
+      }
+      break;
+    }
     case MessageType.GET_MODEL: {
+      if (typeof message.isSystemDark === 'boolean') {
+        lastKnownSystemDark = message.isSystemDark;
+        api.storage.local.set({ isSystemDark: message.isSystemDark });
+      }
       (async () => {
         await registryReadyPromise;
         const settings = await getSettings();
+        if (settings.theme === 'system' || !settings.theme) {
+          updateActionIcon('system', lastKnownSystemDark);
+        }
         sendResponse({
           tabs: mruTabs.slice(),
           settings,

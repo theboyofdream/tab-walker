@@ -14,16 +14,12 @@
     <form id="settings-form" class="settings-form">
       <!-- Theme Selection -->
       <div class="setting-row">
-        <label for="theme" class="setting-label">
-          <span>Theme</span>
-          <small>Select theme (System follows OS theme)</small>
-        </label>
-        <div class="craft-select-wrapper">
-          <select id="theme" class="craft-select">
-            <option value="system">System (Default)</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+        <label class="setting-label">Theme</label>
+        <div class="segmented-control" id="theme-button-group" role="radiogroup" aria-label="Theme Selection">
+          <button type="button" class="segmented-btn" data-value="system" role="radio" aria-checked="false">System</button>
+          <button type="button" class="segmented-btn" data-value="light" role="radio" aria-checked="false">Light</button>
+          <button type="button" class="segmented-btn" data-value="dark" role="radio" aria-checked="false">Dark</button>
+          <input type="hidden" id="theme" value="system">
         </div>
       </div>
 
@@ -119,6 +115,22 @@
             <div class="capsule-fill" id="opacity-fill"></div>
             <div class="ticks-container" id="opacity-ticks"></div>
             <div class="capsule-thumb" id="opacity-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay Blur -->
+      <div class="slider-group" data-unit="px">
+        <div class="slider-header">
+          <label for="overlayBlur" class="slider-label">Overlay Blur</label>
+          <span class="slider-badge" id="overlayBlur-badge">0px</span>
+        </div>
+        <div class="capsule-track-wrapper">
+          <input type="range" id="overlayBlur" min="0" max="20" step="1" value="0" class="capsule-range-input">
+          <div class="capsule-track">
+            <div class="capsule-fill" id="overlayBlur-fill"></div>
+            <div class="ticks-container" id="overlayBlur-ticks"></div>
+            <div class="capsule-thumb" id="overlayBlur-thumb"></div>
           </div>
         </div>
       </div>

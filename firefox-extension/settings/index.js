@@ -16,6 +16,7 @@ const defaultSettings = {
   fontSize: 15,
   iconSize: 20,
   opacity: 100,
+  overlayBlur: 0,
   isSwitchingToPreviouslyUsedTab: true,
   customCss: '',
   position: null
@@ -29,11 +30,12 @@ const fields = [
   'fontSize',
   'iconSize',
   'opacity',
+  'overlayBlur',
   'isSwitchingToPreviouslyUsedTab',
   'customCss'
 ];
 
-const sliderIds = ['popupWidth', 'windowHeight', 'tabHeight', 'fontSize', 'iconSize', 'opacity'];
+const sliderIds = ['popupWidth', 'windowHeight', 'tabHeight', 'fontSize', 'iconSize', 'opacity', 'overlayBlur'];
 const toggleIds = ['isSwitchingToPreviouslyUsedTab'];
 
 const form = document.getElementById('settings-form');
@@ -41,6 +43,20 @@ const resetBtn = document.getElementById('reset-btn');
 const saveStatus = document.getElementById('save-status');
 
 let currentThemeMode = 'system';
+
+function updateThemeButtons(themeValue) {
+  const currentTheme = themeValue || 'system';
+  const themeInput = document.getElementById('theme');
+  if (themeInput) {
+    themeInput.value = currentTheme;
+  }
+  const buttons = document.querySelectorAll('.segmented-btn');
+  buttons.forEach(btn => {
+    const isSelected = btn.dataset.value === currentTheme;
+    btn.classList.toggle('active', isSelected);
+    btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+  });
+}
 
 function applyTheme(themeValue) {
   currentThemeMode = themeValue || 'system';
@@ -63,7 +79,11 @@ function applyTheme(themeValue) {
 }
 
 if (typeof window !== 'undefined' && window.matchMedia) {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    api.runtime.sendMessage({
+      type: 'SYSTEM_THEME_CHANGED',
+      isDark: e.matches
+    }).catch(() => {});
     if (currentThemeMode === 'system') {
       applyTheme('system');
     }
@@ -152,7 +172,9 @@ async function loadSettings() {
     }
   });
 
-  applyTheme(current.theme || (current.isDarkTheme ? 'dark' : 'system'));
+  const activeTheme = current.theme || (current.isDarkTheme ? 'dark' : 'system');
+  updateThemeButtons(activeTheme);
+  applyTheme(activeTheme);
   updateAllCapsuleSliders(current);
 }
 
@@ -173,11 +195,27 @@ async function saveSettings() {
     }
   });
 
+  const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  api.runtime.sendMessage({
+    type: 'SYSTEM_THEME_CHANGED',
+    isDark: isSystemDark
+  }).catch(() => {});
+
   applyTheme(settings.theme);
   updateAllCapsuleSliders(settings);
   await api.storage.local.set({ settings });
   showSaveStatus();
 }
+
+// Initialize theme segmented control buttons
+const themeButtons = document.querySelectorAll('.segmented-btn');
+themeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const selectedTheme = btn.dataset.value;
+    updateThemeButtons(selectedTheme);
+    saveSettings();
+  });
+});
 
 // Initialize tick marks and input event listeners
 sliderIds.forEach(id => {
@@ -211,7 +249,7 @@ toggleIds.forEach(id => {
 
 fields.forEach(field => {
   const el = document.getElementById(field);
-  if (el && !sliderIds.includes(field) && !toggleIds.includes(field)) {
+  if (el && !sliderIds.includes(field) && !toggleIds.includes(field) && field !== 'theme') {
     el.addEventListener('input', saveSettings);
     el.addEventListener('change', saveSettings);
   }

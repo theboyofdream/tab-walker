@@ -21,7 +21,8 @@
     SEARCH_OMNIBOX: 'SEARCH_OMNIBOX',
     NAVIGATE_URL: 'NAVIGATE_URL',
     SAVE_POSITION: 'SAVE_POSITION',
-    SetSettings: 'SetSettings'
+    SetSettings: 'SetSettings',
+    SYSTEM_THEME_CHANGED: 'SYSTEM_THEME_CHANGED'
   };
 
   const fallbackFaviconSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234d5055" d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM4 12H8.4C11.81 12.02 13.32 13.73 12.94 17.13H9.49V19.6C13.34 19.89 16.88 18.35 19.29 15.32C19.83 14.13 20.07 12.82 19.99 11.52C19.33 12.5 18.33 13 17 13C14.86 13 13.79 6.16 12.91 6.16C12.91 5.19 13.24 4.56 13.72 4.19C10.18 4.21 6.99 5.77 4.79 8.54C4.27 9.62 4 10.8 4 12Z"/></svg>`;
@@ -87,6 +88,7 @@
       --tw-size-search-icon: calc(18px * var(--tw-scale, 1));
       --tw-width-scrollbar: calc(4px * var(--tw-scale, 1));
       --tw-opacity-overlay: 1;
+      --tw-blur-overlay: 0px;
     }
     :host(.is-open) {
       pointer-events: auto !important;
@@ -106,6 +108,8 @@
       letter-spacing: var(--tw-letter-spacing);
       background: rgba(0, 0, 0, 0.4);
       opacity: var(--tw-opacity-overlay);
+      backdrop-filter: blur(var(--tw-blur-overlay, 0px));
+      -webkit-backdrop-filter: blur(var(--tw-blur-overlay, 0px));
     }
     :host(.is-open) .tw-overlay {
       display: flex !important;
@@ -919,6 +923,7 @@
     const scale = typeof settings.scale === 'number' ? settings.scale : 1;
     host.style.setProperty('--tw-scale', scale);
     host.style.setProperty('--tw-opacity-overlay', (settings.opacity || 100) / 100);
+    host.style.setProperty('--tw-blur-overlay', `${settings.overlayBlur || 0}px`);
     host.style.setProperty('--tw-width-card', `calc(${settings.popupWidth || 460}px * var(--tw-scale, 1))`);
     host.style.setProperty('--tw-max-height-card', `calc(${settings.windowHeight || 500}px * var(--tw-scale, 1))`);
     host.style.setProperty('--tw-height-tab', `calc(${settings.tabHeight || 42}px * var(--tw-scale, 1))`);
@@ -948,7 +953,11 @@
 
   if (window.matchMedia) {
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    darkModeMediaQuery.addEventListener('change', () => {
+    darkModeMediaQuery.addEventListener('change', (e) => {
+      chrome.runtime.sendMessage({
+        type: MessageType.SYSTEM_THEME_CHANGED,
+        isDark: e.matches
+      }).catch(() => {});
       if (isOpen) {
         applyThemeClass();
       }
@@ -956,7 +965,8 @@
   }
 
   function openPopup() {
-    chrome.runtime.sendMessage({ type: MessageType.GET_MODEL }, (model) => {
+    const isSystemDark = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+    chrome.runtime.sendMessage({ type: MessageType.GET_MODEL, isSystemDark }, (model) => {
       if (!model || !model.tabs) return;
 
       allTabs = model.tabs || [];
@@ -1180,5 +1190,6 @@
   });
 
   // Notify background script that content script is ready
-  chrome.runtime.sendMessage({ type: MessageType.ContentScriptStarted });
+  const isSystemDark = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+  chrome.runtime.sendMessage({ type: MessageType.ContentScriptStarted, isSystemDark }).catch(() => {});
 })();
