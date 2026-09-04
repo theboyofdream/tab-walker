@@ -837,13 +837,14 @@
 
       infoEl.appendChild(iconWrapper);
       infoEl.appendChild(textContainer);
-
-      const badgeEl = document.createElement('span');
-      badgeEl.className = 'tw-tab__badge result-type';
-      badgeEl.textContent = item.itemType;
-
       itemEl.appendChild(infoEl);
-      itemEl.appendChild(badgeEl);
+
+      if (item.itemType && item.itemType !== 'TAB') {
+        const badgeEl = document.createElement('span');
+        badgeEl.className = 'tw-tab__badge result-type';
+        badgeEl.textContent = item.itemType;
+        itemEl.appendChild(badgeEl);
+      }
 
       itemEl.addEventListener('click', (e) => {
         e.stopPropagation();
