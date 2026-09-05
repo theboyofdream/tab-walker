@@ -79,6 +79,7 @@ Loaded from the extension toolbar action popup.
 | `SEARCH_OMNIBOX` | Content | Background | `{ query }` | Requests history and bookmark search results. |
 | `NAVIGATE_URL` | Content | Background | `{ url }` | Navigates active tab to URL. |
 | `SAVE_POSITION` | Content | Background | `{ position }` | Saves card position offset. |
+| `SYSTEM_THEME_CHANGED` | Content / Settings | Background | `{ isDark }` | Notifies background service worker of OS dark mode status to dynamically update toolbar icon. |
 | `GetSettings` | Settings | Background | None | Retrieves settings object. |
 | `SetSettings` | Settings | Background | `{ settings }` | Saves settings object. |
 
